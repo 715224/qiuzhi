@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/word.dart';
 import '../data/word_bank.dart';
+import '../data/github_word_source.dart';
 
 /// 全局应用状态：领域 / 难度 / 词库包筛选、每日名词、历史、收藏。
 /// 持久化到 SharedPreferences。
@@ -10,6 +11,9 @@ class AppState extends ChangeNotifier {
   // —— 可选项（与词库保持一致，新增包后在此扩展）——
   final List<String> allFields = ['通用', '物理', '哲学', '心理学', '工程测量'];
   final List<String> allDifficulties = ['低', '中', '高'];
+
+  /// 远程「每日热词」词库包名（与 GitHub 拉取的 pack 字段对应）。
+  static const String remotePackName = '每日热词';
 
   // 词库包（从词库自动汇总，便于设置页展示与开关）
   late final List<String> allPacks;
@@ -21,6 +25,13 @@ class AppState extends ChangeNotifier {
   Set<int> _favorites = {};
   Map<String, HistoryRecord> _history = {};
   bool _loaded = false;
+
+  // —— 远程词库（从 GitHub 拉取，本地缓存）——
+  String _remoteUrl = '';
+  List<Word> _remoteWords = [];
+  DateTime? _remoteUpdatedAt;
+  String? _remoteError;
+  bool _remoteRefreshing = false;
 
   AppState() {
     allPacks = wordBank.map((w) => w.pack).toSet().toList();
@@ -34,6 +45,24 @@ class AppState extends ChangeNotifier {
   Set<int> get favorites => _favorites;
   Map<String, HistoryRecord> get history => _history;
   bool get loaded => _loaded;
+
+  // —— 远程词库只读访问 ——
+  String get remoteUrl => _remoteUrl;
+  List<Word> get remoteWords => _remoteWords;
+  DateTime? get remoteUpdatedAt => _remoteUpdatedAt;
+  String? get remoteError => _remoteError;
+  bool get remoteRefreshing => _remoteRefreshing;
+  bool get hasRemoteConfig => _remoteUrl.trim().isNotEmpty;
+
+  /// 设置页展示的包列表：本地包 + 远程包。
+  List<String> get displayPacks =>
+      [...allPacks, if (hasRemoteConfig) remotePackName];
+
+  /// 某个包的名词数量（含远程包）。
+  int packCount(String pack) {
+    if (pack == remotePackName) return _remoteWords.length;
+    return wordBank.where((w) => w.pack == pack).length;
+  }
 
   // —— 调整筛选 ——
   void toggleField(String field) {
@@ -70,6 +99,7 @@ class AppState extends ChangeNotifier {
 
   void setAllPacks(bool on) {
     _enabledPacks = on ? allPacks.toSet() : {};
+    if (on && hasRemoteConfig) _enabledPacks.add(remotePackName);
     _save();
     notifyListeners();
   }
@@ -119,15 +149,18 @@ class AppState extends ChangeNotifier {
 
   Word? wordById(int id) {
     try {
-      return wordBank.firstWhere((w) => w.id == id);
+      return allWords.firstWhere((w) => w.id == id);
     } catch (_) {
       return null;
     }
   }
 
   // —— 每日名词（按日期确定性抽取）——
+  /// 所有可用名词：本地词库 + 已拉取的远程词库。
+  List<Word> get allWords => [...wordBank, ..._remoteWords];
+
   Word getTodayWord() {
-    var eligible = wordBank
+    var eligible = allWords
         .where((w) =>
             _selectedFields.contains(w.field) &&
             w.difficulty == _difficulty &&
@@ -136,17 +169,47 @@ class AppState extends ChangeNotifier {
 
     // 兜底：当前筛选下无词，放宽难度
     if (eligible.isEmpty) {
-      eligible = wordBank
+      eligible = allWords
           .where((w) =>
               _selectedFields.contains(w.field) && _enabledPacks.contains(w.pack))
           .toList();
     }
     // 仍为空：用全库，保证永远有词
-    if (eligible.isEmpty) eligible = List.from(wordBank);
+    if (eligible.isEmpty) eligible = List.from(allWords);
 
     final dayIndex = _daysSinceEpoch(DateTime.now());
     final idx = dayIndex % eligible.length;
     return eligible[idx];
+  }
+
+  // —— 远程词库配置与刷新 ——
+  void setRemoteUrl(String url) {
+    _remoteUrl = url.trim();
+    if (_remoteUrl.isNotEmpty) _enabledPacks.add(remotePackName); // 启用即默认勾选
+    _save();
+    notifyListeners();
+    // 配置后立即拉取一次
+    refreshRemote();
+  }
+
+  /// 从 GitHub 拉取最新热词；失败则保留上一次缓存（断网可用）。
+  Future<void> refreshRemote() async {
+    if (_remoteUrl.trim().isEmpty) return;
+    _remoteRefreshing = true;
+    _remoteError = null;
+    notifyListeners();
+    try {
+      final words = await GithubWordSource.fetch(_remoteUrl);
+      _remoteWords = words;
+      _remoteUpdatedAt = DateTime.now();
+      _remoteError = null;
+    } catch (e) {
+      _remoteError = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _remoteRefreshing = false;
+      _save();
+      notifyListeners();
+    }
   }
 
   // —— 持久化 ——
@@ -164,8 +227,26 @@ class AppState extends ChangeNotifier {
     if (histRaw != null) {
       _history = HistoryRecord.fromJsonString(histRaw);
     }
+    // 远程词库配置 + 上次缓存（断网也能用）
+    final remoteUrl = prefs.getString('remoteUrl');
+    if (remoteUrl != null) _remoteUrl = remoteUrl;
+    final remoteRaw = prefs.getString('remoteWords');
+    if (remoteRaw != null) {
+      final list = (jsonDecode(remoteRaw) as List)
+          .map((e) => Word.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _remoteWords = list;
+    }
+    final remoteAt = prefs.getString('remoteUpdatedAt');
+    if (remoteAt != null) _remoteUpdatedAt = DateTime.tryParse(remoteAt);
+
     _loaded = true;
     notifyListeners();
+
+    // 后台静默刷新：不阻塞启动；失败时保留缓存
+    if (_remoteUrl.trim().isNotEmpty) {
+      refreshRemote(); // 不 await，fire-and-forget
+    }
   }
 
   Future<void> _save() async {
@@ -175,6 +256,11 @@ class AppState extends ChangeNotifier {
     await prefs.setString('enabledPacks', _enabledPacks.join(','));
     await prefs.setStringList('favorites', _favorites.map((e) => e.toString()).toList());
     await prefs.setString('history', HistoryRecord.toJsonString(_history));
+    await prefs.setString('remoteUrl', _remoteUrl);
+    await prefs.setString(
+        'remoteWords', jsonEncode(_remoteWords.map((w) => w.toJson()).toList()));
+    await prefs.setString(
+        'remoteUpdatedAt', _remoteUpdatedAt?.toIso8601String() ?? '');
   }
 
   // —— 工具 ——

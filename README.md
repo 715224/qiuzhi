@@ -75,6 +75,12 @@ flutter pub get
 
 `flutter create .` 会补全 `android/`、`ios/` 等目录，**不会覆盖 `lib/` 下的代码**。
 
+> ⚠️ **联网权限**：远程词库需要联网。请确认 `android/app/src/main/AndroidManifest.xml`
+> 的 `<manifest>` 内已包含（Flutter 默认可能没有）：
+> ```xml
+> <uses-permission android:name="android.permission.INTERNET"/>
+> ```
+
 ### 3. 运行
 
 连接安卓设备或启动模拟器，然后：
@@ -85,12 +91,65 @@ flutter run
 
 热重载：保存文件后按 `r`；完整重启按 `R`。
 
+## 远程词库（每日热词 / GitHub 导入）
+
+App 支持从 GitHub 拉取远程词库，实现每日热词更新。**已内置实现**，配置即用。
+
+### 1. 准备 words.json
+
+在 GitHub 新建一个公开仓库，放一个 `words.json`，内容是一个名词数组：
+
+```json
+[
+  {
+    "id": 1001,
+    "word": "大模型",
+    "pinyin": "dà mó xíng",
+    "field": "通用",
+    "difficulty": "中",
+    "pack": "每日热词",
+    "definition": "基于海量数据训练、能完成语言理解与生成等任务的超大参数神经网络模型。"
+  },
+  {
+    "id": 1002,
+    "word": "具身智能",
+    "pinyin": "jù shēn",
+    "field": "通用",
+    "difficulty": "高",
+    "pack": "每日热词",
+    "definition": "将感知、决策与身体行动结合，在真实环境中完成任务的智能体。"
+  }
+]
+```
+
+> 字段说明：`pack` 建议统一填 `每日热词`（与 App 里的远程包名对应）；
+> `field` 取「通用 / 物理 / 哲学 / 心理学 / 工程测量」之一；`difficulty` 取「低 / 中 / 高」。
+> 缺失字段会自动补默认值，不会导致崩溃。
+
+### 2. 拿到 raw 地址
+
+在仓库里打开 `words.json` → 点击 **Raw** → 复制浏览器地址，形如：
+
+```
+https://raw.githubusercontent.com/<你的用户名>/<仓库名>/main/words.json
+```
+
+### 3. 在 App 里配置
+
+打开「我的」→「每日热词（GitHub 远程）」，粘贴上面的地址 → 点「应用并刷新」。
+App 会立即拉取并缓存；之后**每次打开 App 都会静默刷新一次**（断网则用上次缓存）。
+拉取成功后在「词库包」里会出现「每日热词」开关，打开后它就参与每日抽取。
+
+### 4. 配合 WorkBuddy 自动化做每日更新
+
+由 WorkBuddy 自动化每天生成新的 `words.json` 并推送到该 GitHub 仓库，App 单向拉取即可。
+内容生产在自动化侧，App 逻辑保持轻量。（自动化任务可在 App 骨架与仓库就绪后用 `automation_update` 创建。）
+
 ## 后续可扩展
 
-- **GitHub 导入词库包**：从 `raw.githubusercontent.com` 拉取 JSON 词库，实现词库热更新。
-- **WorkBuddy 自动化每日热词**：写一个定时任务，每日生成热词 JSON 推送到 GitHub 仓库，App 单向拉取。
 - **每日提醒**：接入 `flutter_local_notifications` 做固定时间推送。
 - **解释 AI 点评**：将用户解释送往大模型，给出差距与改进建议。
+- **多远程源**：支持配置多个 GitHub 仓库 / 分支，按包名分别开关。
 
 ## 技术栈
 

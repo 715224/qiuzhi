@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1001,
+    "word": "大模型",
+    "pinyin": "dà mó xíng",
+    "field": "通用",
+    "difficulty": "中",
+    "pack": "每日热词",
+    "definition": "基于海量数据训练、能完成语言理解与生成等任务的超大参数神经网络模型。"
+  },
+  {
+    "id": 1002,
+    "word": "具身智能",
+    "pinyin": "jù shēn zhì néng",
+    "field": "通用",
+    "difficulty": "高",
+    "pack": "每日热词",
+    "definition": "将感知、决策与身体行动结合，在真实环境中完成任务的智能体。"
+  },
+  {
+    "id": 1003,
+    "word": "世界模型",
+    "pinyin": "shì jiè mó xíng",
+    "field": "通用",
+    "difficulty": "高",
+    "pack": "每日热词",
+    "definition": "智能体内部对外部环境运行规律的内隐或显式建模，用于预测与规划。"
+  }
+]
