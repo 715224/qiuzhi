@@ -1,0 +1,61 @@
+import '../models/word.dart';
+
+/// 示例词库：覆盖通用 / 物理 / 哲学 / 心理学 / 工程测量 等领域，
+/// 难度分 低 / 中 / 高，归属于不同词库包。
+final List<Word> wordBank = [
+  // —— 通用知识包 ——
+  Word(id: 1, word: '熵', pinyin: 'shāng', field: '物理', difficulty: '中', pack: '通用知识包',
+      definition: '描述系统混乱程度的物理量。孤立系统中熵总趋向增大，即自发地从有序走向无序。'),
+  Word(id: 2, word: '涌现', pinyin: 'yǒng xiàn', field: '通用', difficulty: '高', pack: '通用知识包',
+      definition: '大量个体相互作用后，整体呈现出单个个体所不具备的新性质或新行为。'),
+  Word(id: 3, word: '稀缺', pinyin: 'xī quē', field: '通用', difficulty: '中', pack: '通用知识包',
+      definition: '资源有限而人的欲望无限，因而必须做出取舍的基本经济现实。'),
+  Word(id: 4, word: '复利', pinyin: 'fù lì', field: '通用', difficulty: '中', pack: '通用知识包',
+      definition: '利息计入本金继续生息，使财富随时间呈指数增长的效应。'),
+  Word(id: 5, word: '内卷', pinyin: 'nèi juǎn', field: '通用', difficulty: '低', pack: '通用知识包',
+      definition: '在有限资源下，内部竞争不断加剧却整体收益不增的过度努力状态。'),
+  Word(id: 6, word: '破窗效应', pinyin: 'pò chuāng', field: '通用', difficulty: '中', pack: '通用知识包',
+      definition: '环境中的小失序若不被纠正，会诱使更多人模仿破坏，导致混乱升级。'),
+  Word(id: 21, word: '负反馈', pinyin: 'fù fǎn', field: '通用', difficulty: '中', pack: '通用知识包',
+      definition: '系统将输出回送并抵消变化，使状态趋向稳定的调节机制。'),
+  Word(id: 22, word: '阈值', pinyin: 'yù zhí', field: '通用', difficulty: '低', pack: '通用知识包',
+      definition: '触发某一反应或状态改变所需达到的最小临界值。'),
+  Word(id: 23, word: '生态位', pinyin: 'shēng tài', field: '通用', difficulty: '中', pack: '通用知识包',
+      definition: '物种在环境中生存繁衍所占据的资源、空间与角色位置。'),
+
+  // —— 哲学包 ——
+  Word(id: 7, word: '存在主义', pinyin: 'cún zài', field: '哲学', difficulty: '中', pack: '哲学包',
+      definition: '强调人先存在、再通过选择定义自身，人必须为自己的自由负责的思想流派。'),
+  Word(id: 8, word: '洞穴寓言', pinyin: 'dòng xué', field: '哲学', difficulty: '中', pack: '哲学包',
+      definition: '柏拉图用以比喻人被困于表象、唯有挣脱才能见到真实理念的思想实验。'),
+  Word(id: 9, word: '奥卡姆剃刀', pinyin: 'ào kǎ mǔ', field: '哲学', difficulty: '中', pack: '哲学包',
+      definition: '如无必要勿增实体——解释同一现象时，假设最少的理论更可取。'),
+  Word(id: 24, word: '范式', pinyin: 'fàn shì', field: '哲学', difficulty: '高', pack: '哲学包',
+      definition: '某领域共同体共享的基本假设、理论与方法框架，科学革命即范式更替。'),
+
+  // —— 心理学术语包 ——
+  Word(id: 11, word: '锚定效应', pinyin: 'máo dìng', field: '心理学', difficulty: '中', pack: '心理学术语包',
+      definition: '人做判断时过度受最先接触的信息（锚）影响，难以充分调整。'),
+  Word(id: 12, word: '邓宁-克鲁格效应', pinyin: 'dèng níng', field: '心理学', difficulty: '中', pack: '心理学术语包',
+      definition: '能力越低的人越容易高估自己，而专家反而更谦逊的认知偏差。'),
+  Word(id: 13, word: '心流', pinyin: 'xīn liú', field: '心理学', difficulty: '低', pack: '心理学术语包',
+      definition: '人全神贯注于挑战与技能匹配的活动时，忘我且愉悦的最佳体验状态。'),
+  Word(id: 14, word: '习得性无助', pinyin: 'xí dé', field: '心理学', difficulty: '中', pack: '心理学术语包',
+      definition: '反复遭受不可控挫折后，即使困境可改变也放弃尝试的被动状态。'),
+  Word(id: 15, word: '认知偏差', pinyin: 'rèn zhī', field: '心理学', difficulty: '低', pack: '心理学术语包',
+      definition: '人在加工信息时系统性偏离理性的固定思维捷径与误区。'),
+  Word(id: 25, word: '确认偏误', pinyin: 'què rèn', field: '心理学', difficulty: '低', pack: '心理学术语包',
+      definition: '人倾向于寻找、解读支持既有观点的信息，忽视相反证据。'),
+
+  // —— 工程测量术语包 ——
+  Word(id: 16, word: '高程', pinyin: 'gāo chéng', field: '工程测量', difficulty: '中', pack: '工程测量术语包',
+      definition: '地面点到高程基准面（如黄海平均海平面）的垂直距离。'),
+  Word(id: 17, word: '闭合差', pinyin: 'bì hé', field: '工程测量', difficulty: '高', pack: '工程测量术语包',
+      definition: '测量闭合环中，理论值应相等而实际观测的累积差值，用于衡量精度。'),
+  Word(id: 18, word: '坐标方位角', pinyin: 'fāng wèi', field: '工程测量', difficulty: '中', pack: '工程测量术语包',
+      definition: '从坐标纵轴北端顺时针到某边方向线的水平夹角。'),
+  Word(id: 19, word: '比例尺', pinyin: 'bǐ lì', field: '工程测量', difficulty: '低', pack: '工程测量术语包',
+      definition: '图上距离与实地相应水平距离的比值，如 1:500。'),
+  Word(id: 20, word: '水准测量', pinyin: 'shuǐ zhǔn', field: '工程测量', difficulty: '中', pack: '工程测量术语包',
+      definition: '利用水准仪和水准尺测定地面点高差，进而求高程的方法。'),
+];
