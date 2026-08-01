@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/715224/qiuzhi/daily_hotwords/schema/words.schema.json",
+  "title": "求知每日热词",
+  "description": "求知 App 每日远程热词数组",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "id",
+      "word",
+      "pinyin",
+      "field",
+      "difficulty",
+      "pack",
+      "definition"
+    ],
+    "properties": {
+      "id": {
+        "type": "integer",
+        "minimum": 1,
+        "description": "YYYYMMDDNN 格式的唯一整数 ID"
+      },
+      "word": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "pinyin": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "field": {
+        "type": "string",
+        "enum": ["通用", "物理", "哲学", "心理学", "工程测量"]
+      },
+      "difficulty": {
+        "type": "string",
+        "enum": ["低", "中", "高"]
+      },
+      "pack": {
+        "const": "每日热词"
+      },
+      "definition": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 300
+      }
+    }
+  }
+}
