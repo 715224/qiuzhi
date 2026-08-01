@@ -12,23 +12,25 @@
 
 ## 自动化必须完成的动作
 
-1. 生成 3 条不重复、定义准确且适合费曼式学习的中文热词。
+1. 生成 3 条不重复、定义准确且适合费曼式学习的中文热词，每条同时包含一句话解释、生活类比、实际应用和常见误区。
 2. 按 `YYYYMMDDNN` 生成整数 ID，`NN` 从 `01` 开始。
 3. 输出符合 `schema/words.schema.json` 的 JSON 数组。
 4. 将数组同时写入：
    - `daily_hotwords/words.json`
    - `daily_hotwords/archive/YYYY/MM/YYYY-MM-DD.json`
-5. 更新 `daily_hotwords/manifest.json`：
+5. 同步更新 `daily_hotwords/library.json`：追加当日词条，按 `id` 去重，保留全部往日词条。
+6. 更新 `daily_hotwords/manifest.json`：
    - `updatedAt`
    - `sourceFile`
    - `wordCount`
-6. 确认 JSON 为 UTF-8、可解析、ID 无重复、字段值合法。
-7. Git 提交信息固定为 `hotwords: publish YYYY-MM-DD`。
+7. 确认 JSON 为 UTF-8、可解析、ID 无重复、字段值合法。
+8. Git 提交信息固定为 `hotwords: publish YYYY-MM-DD`。
 
 ## 内容质量要求
 
 - 不直接复制新闻标题；选取标题背后的可解释概念。
 - 定义控制在 35～100 个汉字，避免循环定义。
+- 四段详解使用完整中文句子，内容具体，避免四个字段只是重复标准定义。
 - 拼音使用带声调的拉丁字母。
 - 同一天避免三个词属于同一狭窄主题。
 - 不删除历史归档，不修改已经发布的旧归档；勘误另作提交说明。

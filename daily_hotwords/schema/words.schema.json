@@ -15,6 +15,12 @@
       "field",
       "difficulty",
       "pack",
+      "publishedDate",
+      "category",
+      "simpleExplanation",
+      "lifeAnalogy",
+      "practicalApplication",
+      "commonMisconception",
       "definition"
     ],
     "properties": {
@@ -43,6 +49,35 @@
       },
       "pack": {
         "const": "每日热词"
+      },
+      "publishedDate": {
+        "type": "string",
+        "format": "date",
+        "description": "发布日期，固定为 YYYY-MM-DD"
+      },
+      "category": {
+        "type": "string",
+        "enum": ["科技", "财经", "社会", "科学", "文化", "教育", "健康", "心理", "生活", "其他"]
+      },
+      "simpleExplanation": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 300
+      },
+      "lifeAnalogy": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 300
+      },
+      "practicalApplication": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 300
+      },
+      "commonMisconception": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 300
       },
       "definition": {
         "type": "string",

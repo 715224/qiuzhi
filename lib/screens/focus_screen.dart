@@ -2,10 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/word.dart';
-import '../screens/explain_screen.dart';
+import '../theme/pixel_theme.dart';
+import '../widgets/pixel_ui.dart';
+import 'explain_screen.dart';
 
-/// 番茄钟锁屏：深色全屏，环形进度，15 分钟专注思考。
-/// 不显示任何答案，仅一个低调的「提前结束」按钮。
+/// 像素风专注模式：15 分钟倒计时，不显示答案。
 class FocusScreen extends StatefulWidget {
   final Word word;
   final int minutes;
@@ -16,9 +17,8 @@ class FocusScreen extends StatefulWidget {
   State<FocusScreen> createState() => _FocusScreenState();
 }
 
-class _FocusScreenState extends State<FocusScreen>
-    with SingleTickerProviderStateMixin {
-  late int _totalSeconds;
+class _FocusScreenState extends State<FocusScreen> {
+  late final int _totalSeconds;
   late int _remaining;
   Timer? _timer;
   bool _finished = false;
@@ -28,35 +28,28 @@ class _FocusScreenState extends State<FocusScreen>
     super.initState();
     _totalSeconds = widget.minutes * 60;
     _remaining = _totalSeconds;
-    // 进入沉浸模式，隐藏状态栏/导航栏，强化「锁屏」感
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _start();
-  }
-
-  void _start() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (_remaining > 0) {
-        setState(() => _remaining--);
-        if (_remaining == 0) _onFinish();
-      }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_remaining <= 0) return;
+      setState(() => _remaining--);
+      if (_remaining == 0) _finish(_totalSeconds);
     });
   }
 
-  void _onFinish() {
+  void _finish(int secondsSpent) {
     if (_finished) return;
     _finished = true;
     _timer?.cancel();
     _exitImmersive();
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => ExplainScreen(
-            word: widget.word,
-            secondsSpent: _totalSeconds,
-          ),
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => ExplainScreen(
+          word: widget.word,
+          secondsSpent: secondsSpent,
         ),
-      );
-    }
+      ),
+    );
   }
 
   void _exitImmersive() {
@@ -67,31 +60,20 @@ class _FocusScreenState extends State<FocusScreen>
   }
 
   void _confirmExit() {
-    showDialog<bool>(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('提前结束？'),
-        content: const Text('专注还没结束，提前结束将进入解释环节（不计入满分专注）。'),
+        content: const Text('现在结束会直接进入解释环节，本次专注时间仍会被记录。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
+            onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('继续专注'),
           ),
           FilledButton(
             onPressed: () {
-              Navigator.of(ctx).pop(true);
-              _finished = true;
-              _timer?.cancel();
-              final spent = _totalSeconds - _remaining;
-              _exitImmersive();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(
-                  builder: (_) => ExplainScreen(
-                    word: widget.word,
-                    secondsSpent: spent,
-                  ),
-                ),
-              );
+              Navigator.of(ctx).pop();
+              _finish(_totalSeconds - _remaining);
             },
             child: const Text('结束'),
           ),
@@ -116,83 +98,100 @@ class _FocusScreenState extends State<FocusScreen>
   @override
   Widget build(BuildContext context) {
     final progress = 1 - _remaining / _totalSeconds;
+    final palette = context.pixelPalette;
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1115),
+      backgroundColor: palette.accentDeep,
       body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 40),
-            Text(
-              '正在思考',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.4),
-                letterSpacing: 4,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.word.word,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 32,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            // 环形进度 + 大计时
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 260,
-                  height: 260,
-                  child: CircularProgressIndicator(
-                    value: progress,
-                    strokeWidth: 10,
-                    backgroundColor: Colors.white.withOpacity(0.08),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Color(0xFF7C9CFF)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const PixelTag('FOCUS MODE', filled: true),
+                  Text(
+                    'NO. ${widget.word.id.toString().padLeft(3, '0')}',
+                    style: TextStyle(
+                      color: palette.soft,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
+                ],
+              ),
+              const Spacer(),
+              PixelPanel(
+                color: palette.softest,
+                padding: const EdgeInsets.fromLTRB(18, 24, 18, 22),
+                child: Column(
                   children: [
+                    Text(
+                      '正在思考',
+                      style: TextStyle(
+                        color: palette.accentDark,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.word.word,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 26),
                     Text(
                       _clock,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 64,
-                        fontWeight: FontWeight.w300,
+                        fontSize: 56,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
                         fontFeatures: [FontFeature.tabularFigures()],
+                        letterSpacing: 2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 20),
+                    PixelProgressBar(value: progress, segments: 10, height: 22),
+                    const SizedBox(height: 14),
                     Text(
-                      '专注思考，不要查答案',
+                      progress < .5 ? '让思绪慢慢加载…' : '答案正在脑海中成形',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.35),
-                        fontSize: 13,
+                        color: palette.muted,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const Spacer(),
-            // 低调的退出按钮
-            TextButton(
-              onPressed: _confirmExit,
-              child: Text(
-                '提前结束',
+              ),
+              const Spacer(),
+              Text(
+                '专注思考 · 不要查答案',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.25),
-                  fontSize: 13,
+                  color: palette.soft,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1,
                 ),
               ),
-            ),
-            const SizedBox(height: 32),
-          ],
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: palette.white,
+                    side: BorderSide(color: palette.soft, width: 2),
+                  ),
+                  onPressed: _confirmExit,
+                  child: const Text('提前结束'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -3,6 +3,7 @@
   "timezone": "Asia/Shanghai",
   "updatedAt": "2026-08-01T13:16:00+08:00",
   "currentFile": "words.json",
+  "libraryFile": "library.json",
   "sourceFile": "archive/2026/08/2026-08-01.json",
   "archivePattern": "archive/YYYY/MM/YYYY-MM-DD.json",
   "wordCount": 10

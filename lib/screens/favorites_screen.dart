@@ -1,59 +1,109 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/word.dart';
 import '../providers/app_state.dart';
-import '../screens/result_screen.dart';
+import '../theme/pixel_theme.dart';
+import '../widgets/pixel_ui.dart';
+import 'result_screen.dart';
 
-/// 收藏页：列出用户收藏的词，点开查看标准定义与自己的解释。
+/// 收藏页：列出用户收藏的词。
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final app = Provider.of<AppState>(context);
-    final ids = app.favorites.toList();
+    final app = context.watch<AppState>();
+    final palette = context.pixelPalette;
+    final words = app.favorites
+        .map(app.wordById)
+        .whereType<Word>()
+        .toList(growable: false);
 
-    if (ids.isEmpty) {
-      return const Center(
-        child: Text('还没有收藏。在对照结果页点「收藏」即可加入。'),
-      );
-    }
-
-    final words = ids
-        .map((id) => app.wordById(id))
-        .where((w) => w != null)
-        .cast<dynamic>()
-        .toList();
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: words.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, i) {
-        final word = words[i];
-        final hasRecord = app.history.values
-            .any((r) => r.wordId == word.id);
-        final rec = hasRecord
-            ? app.history.values.firstWhere((r) => r.wordId == word.id)
-            : null;
-        return ListTile(
-          leading: const Icon(Icons.star, color: Colors.amber),
-          title: Text(word.word, style: const TextStyle(fontSize: 17)),
-          subtitle: Text('${word.field} · ${word.pack}'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => ResultScreen(
-                  word: word,
-                  userExplanation: rec?.userExplanation ?? '',
-                  secondsSpent: rec?.secondsSpent ?? 0,
-                  review: true,
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              child: PixelPageTitle(
+                title: '收藏图鉴',
+                subtitle: 'KNOWLEDGE COLLECTION',
+                trailing: PixelTag('${words.length} 枚', filled: true),
+              ),
+            ),
+            if (words.isEmpty)
+              const Expanded(
+                child: PixelEmptyState(
+                  title: '还没有收藏',
+                  message: '在对照结果页点亮星星，\n把喜欢的名词收进图鉴。',
+                ),
+              )
+            else
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 24, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 14,
+                    crossAxisSpacing: 14,
+                    childAspectRatio: 1.14,
+                  ),
+                  itemCount: words.length,
+                  itemBuilder: (context, i) {
+                    final word = words[i];
+                    final records = app.history.values
+                        .where((r) => r.wordId == word.id)
+                        .toList();
+                    final rec = records.isEmpty ? null : records.first;
+                    return InkWell(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ResultScreen(
+                            word: word,
+                            userExplanation: rec?.userExplanation ?? '',
+                            secondsSpent: rec?.secondsSpent ?? 0,
+                            review: true,
+                          ),
+                        ),
+                      ),
+                      child: PixelPanel(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Align(
+                              alignment: Alignment.topRight,
+                              child: Icon(Icons.star,
+                                  size: 18, color: palette.accentDark),
+                            ),
+                            const Spacer(),
+                            Text(
+                              word.word,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              word.field,
+                              style: TextStyle(
+                                color: palette.muted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

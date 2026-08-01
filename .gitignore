@@ -13,6 +13,10 @@ android/.gradle/
 android/app/debug/
 android/app/profile/
 android/app/release/
+android/.kotlin/
+*.apk
+*.apk.*
+reference_sources/
 ios/Runner/GeneratedPluginRegistrant.*
 ios/Flutter/Flutter.framework/
 ios/Flutter/Flutter.podspec

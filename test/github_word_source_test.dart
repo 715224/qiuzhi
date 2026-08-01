@@ -1,0 +1,86 @@
+import 'dart:convert';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:qiuzhi/data/github_word_source.dart';
+
+void main() {
+  group('GithubWordSource.candidateUris', () {
+    test('expands a repository home page', () {
+      final urls = GithubWordSource.candidateUris(
+        'https://github.com/715224/qiuzhi',
+      ).map((uri) => uri.toString()).toList();
+
+      expect(urls.first,
+          'https://cdn.jsdelivr.net/gh/715224/qiuzhi@master/daily_hotwords/library.json');
+      expect(
+        urls,
+        contains(
+          'https://api.github.com/repos/715224/qiuzhi/contents/daily_hotwords/words.json?ref=master',
+        ),
+      );
+      expect(
+        urls,
+        contains(
+          'https://cdn.jsdelivr.net/gh/715224/qiuzhi@master/words.example.json',
+        ),
+      );
+      expect(
+        urls,
+        contains(
+          'https://api.github.com/repos/715224/qiuzhi/contents/words.example.json?ref=master',
+        ),
+      );
+      expect(urls.last,
+          'https://raw.githubusercontent.com/715224/qiuzhi/master/words.example.json');
+    });
+
+    test('converts a GitHub file page to a raw URL', () {
+      final urls = GithubWordSource.candidateUris(
+        'https://github.com/715224/qiuzhi/blob/master/words.example.json',
+      );
+
+      expect(urls.map((uri) => uri.host), [
+        'cdn.jsdelivr.net',
+        'api.github.com',
+        'raw.githubusercontent.com',
+      ]);
+    });
+
+    test('keeps a raw URL unchanged', () {
+      const raw =
+          'https://raw.githubusercontent.com/715224/qiuzhi/master/words.example.json';
+      final urls = GithubWordSource.candidateUris(raw);
+      expect(urls.first.host, 'cdn.jsdelivr.net');
+      expect(urls.last.toString(), raw);
+    });
+  });
+
+  test('falls back from missing files to the CDN example file', () async {
+    final requested = <Uri>[];
+    final client = MockClient((request) async {
+      requested.add(request.url);
+      if (request.url.host == 'cdn.jsdelivr.net' &&
+          request.url.path.endsWith('@master/words.example.json')) {
+        return http.Response.bytes(
+          utf8.encode('[{"id":1001,"word":"大模型","pack":"每日热词"}]'),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      return http.Response('not found', 404);
+    });
+
+    final words = await GithubWordSource.fetch(
+      'https://github.com/715224/qiuzhi',
+      client: client,
+    );
+
+    expect(words.single.word, '大模型');
+    expect(requested.first.host, 'cdn.jsdelivr.net');
+    expect(
+      requested.last.toString(),
+      'https://cdn.jsdelivr.net/gh/715224/qiuzhi@master/words.example.json',
+    );
+  });
+}
