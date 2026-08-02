@@ -53,6 +53,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 18),
             PixelPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const PixelSectionTitle('本地学习档案', index: 'SAVE'),
+                  const SizedBox(height: 10),
+                  Text(
+                    '学习进度、每日目标、收藏、设置和自定义词包会自动保存在当前浏览器。关闭网页或重启电脑后，再用同一入口打开即可继续。',
+                    style: TextStyle(
+                      color: palette.muted,
+                      fontSize: 11,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      PixelTag('已学习 ${app.history.length} 词', filled: true),
+                      PixelTag('已收藏 ${app.favorites.length} 词'),
+                      PixelTag('目标 ${app.dailyGoal} 词/天'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '提示：清除浏览器网站数据会删除本地档案。',
+                    style: TextStyle(color: palette.muted, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            PixelPanel(
               color: context.pixelPalette.softest,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

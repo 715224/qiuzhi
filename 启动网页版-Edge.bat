@@ -36,6 +36,7 @@ if not exist "%EDGE%" (
   exit /b 0
 )
 
-rem A fresh port plus InPrivate prevents reuse of the old Service Worker cache.
-start "" "%EDGE%" --inprivate "http://127.0.0.1:18766/?edge=fresh"
+rem Keep a dedicated persistent Edge profile so progress survives browser restarts.
+set "QIUZHI_EDGE_DATA=%LOCALAPPDATA%\Qiuzhi\EdgeProfile"
+start "" "%EDGE%" --user-data-dir="%QIUZHI_EDGE_DATA%" --no-first-run --new-window "http://127.0.0.1:18766/?edge=persistent"
 exit /b 0
