@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#35c9c5">
+  <title>打开求知网页版</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh; margin: 0; display: grid; place-items: center;
+      background: #f3fcfb; color: #163230;
+      font-family: ui-monospace, "Cascadia Mono", "Microsoft YaHei", monospace;
+    }
+    main {
+      width: min(560px, calc(100% - 32px)); padding: 34px;
+      background: #fff; border: 3px solid #163230;
+      box-shadow: 9px 9px 0 #163230;
+    }
+    .badge { display: inline-block; padding: 5px 9px; background: #35c9c5; border: 2px solid #163230; font-weight: 900; }
+    h1 { margin: 20px 0 8px; font-size: clamp(28px, 8vw, 46px); letter-spacing: 8px; }
+    p { line-height: 1.8; color: #587775; }
+    a {
+      display: block; margin-top: 24px; padding: 16px 20px;
+      color: #163230; background: #35c9c5; border: 2px solid #163230;
+      text-decoration: none; text-align: center; font-size: 18px; font-weight: 900;
+    }
+    a:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 #163230; }
+    small { display: block; margin-top: 18px; line-height: 1.7; color: #6f8987; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">WEB / PWA</span>
+    <h1>求知</h1>
+    <p>点击下面的按钮进入网页版。无需在文件夹里寻找入口文件。</p>
+    <a href="build/web/index.html">打开求知网页版</a>
+    <small>如果浏览器阻止本地网页运行，请双击同目录的“启动网页版.bat”，它会自动启动本地服务并打开页面。</small>
+  </main>
+</body>
+</html>
