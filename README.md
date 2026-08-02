@@ -61,13 +61,6 @@ flutter run -d chrome
 flutter build web --release --no-wasm-dry-run
 ```
 
-静态文件生成在 `build/web/`。把该目录中的**全部内容**上传至静态网站根目录即可，
-不能只上传 `index.html`。当前归档包位于：
-
-```text
-C:\Users\16195\Desktop\求知\111111111111\qiuzhi-web-v0.3.7+20.zip
-```
-
 可部署到 Gitee Pages、GitHub Pages、Cloudflare Pages、Vercel、Nginx 或其他静态托管。
 如果部署在子目录，需要指定对应基础路径，例如：
 
