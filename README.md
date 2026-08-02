@@ -6,7 +6,8 @@
 > 示例名词来自内置词库（通用 / 物理 / 哲学 / 心理学 / 工程测量），难度分 低 / 中 / 高。  
 > 后续可通过 GitHub 导入词库包，配合 WorkBuddy 自动化实现每日热词更新。
 
-> 项目仓库：https://github.com/715224/qiuzhi（公共仓库，本机 `C:\Users\16195\Desktop\求知` 已通过 git 连接，可随时 `git push` 更新。）
+> GitHub：https://github.com/715224/qiuzhi  
+> Gitee：https://gitee.com/ccy1028/the-pursuit-of-knowledge
 
 ---
 
@@ -39,6 +40,53 @@
 - 内置菜鸟教程递进词包：一级 28 词、二级 95 词、三级 123 词；高等级完整包含低等级内容。
 - 本地持久化（SharedPreferences）
 - 两套可保存的界面主题：青色像素 / 粉色萌物像素
+- 响应式 Web / PWA：窄屏使用手机底部导航，桌面宽屏自动切换左侧导航。
+
+## 网页版
+
+网页版与 Android 版共用同一套 Flutter 业务代码和本地数据结构，支持词包、搜索、
+手动抽词、每日目标、等级经验、详情页、历史、收藏以及青色/粉色主题。浏览器数据
+保存在当前网站的本地存储中，不会自动与手机端同步。
+
+### 本地运行
+
+```bash
+flutter pub get
+flutter run -d chrome
+```
+
+### 构建部署包
+
+```bash
+flutter build web --release --no-wasm-dry-run
+```
+
+静态文件生成在 `build/web/`。把该目录中的**全部内容**上传至静态网站根目录即可，
+不能只上传 `index.html`。当前归档包位于：
+
+```text
+C:\Users\16195\Desktop\求知\111111111111\qiuzhi-web-v0.3.7+20.zip
+```
+
+可部署到 Gitee Pages、GitHub Pages、Cloudflare Pages、Vercel、Nginx 或其他静态托管。
+如果部署在子目录，需要指定对应基础路径，例如：
+
+```bash
+flutter build web --release --no-wasm-dry-run --base-href /the-pursuit-of-knowledge/
+```
+
+### 安装为桌面应用
+
+通过 HTTPS 打开网站后，可在 Chrome/Edge 地址栏的“安装应用”入口把它安装为 PWA。
+若浏览器没有显示安装按钮，请检查网站是否使用 HTTPS，以及 `manifest.json`、图标和
+Flutter 生成的 service worker 是否能正常访问。
+
+### 网页版注意事项
+
+- 远程热词和 AI 接口必须允许浏览器跨域请求（CORS）；否则手机端能访问、网页端仍可能失败。
+- API Key 会保存在当前浏览器站点存储中；公共电脑上不要保存个人密钥。
+- 清除浏览器站点数据会同时清除目标、历史、收藏、自定义词包和模型配置。
+- 每日热词仍以北京时间中午 12:00 为分界，并在打开/恢复页面后检查更新。
 
 ## 界面主题
 
