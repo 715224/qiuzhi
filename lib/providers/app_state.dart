@@ -312,6 +312,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 清空学习产生的数据，但保留目标、筛选、主题、词包和自定义词汇。
+  Future<void> clearLearningData() async {
+    _history.clear();
+    _favorites.clear();
+    await _save();
+    notifyListeners();
+  }
+
   // —— 历史 ——
   bool isDoneToday() {
     return todayCompletedCount >= todayTargetCount;

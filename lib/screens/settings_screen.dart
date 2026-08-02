@@ -19,6 +19,42 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _urlController = TextEditingController();
 
+  Future<void> _confirmClearLearningData(AppState app) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final palette = dialogContext.pixelPalette;
+        return AlertDialog(
+          title: const Text('清空全部学习记录？'),
+          content: const Text(
+            '这会删除所有学习历史、今日进度、经验等级和收藏，且无法恢复。每日目标、主题、词包和自定义词汇会保留。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: palette.danger,
+                foregroundColor: palette.white,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('确认清空'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true) return;
+
+    await app.clearLearningData();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('全部学习记录已清空')),
+    );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -80,6 +116,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text(
                     '提示：清除浏览器网站数据会删除本地档案。',
                     style: TextStyle(color: palette.muted, fontSize: 10),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: palette.danger,
+                        side: BorderSide(color: palette.danger, width: 2),
+                      ),
+                      onPressed: app.history.isEmpty && app.favorites.isEmpty
+                          ? null
+                          : () => _confirmClearLearningData(app),
+                      icon: const Icon(Icons.delete_sweep_outlined),
+                      label: const Text('清空全部学习记录'),
+                    ),
                   ),
                 ],
               ),

@@ -230,4 +230,38 @@ void main() {
     expect(AppState.experienceFor(record('中', 5 * 60)), 35);
     expect(AppState.experienceFor(record('高', 30 * 60)), 60);
   });
+
+  test('清空学习记录后保留目标主题和自定义词包', () async {
+    SharedPreferences.setMockInitialValues({'remoteUrl': ''});
+    final state = AppState();
+    await state.load();
+    state.setDailyGoal(3);
+    state.setVisualTheme(AppVisualTheme.pinkMascot);
+    state.toggleFavorite(1);
+    state.saveToday(
+      word: state.wordById(1)!,
+      userExplanation: '待清空的学习记录',
+      secondsSpent: 60,
+    );
+    state.saveWordEdit(
+      word: '保留的自定义词',
+      pinyin: 'bǎo liú',
+      field: '通用',
+      difficulty: '中',
+      pack: '保留词包',
+      definition: '清空学习记录后仍应存在。',
+    );
+
+    await state.clearLearningData();
+    final restored = AppState();
+    await restored.load();
+
+    expect(restored.history, isEmpty);
+    expect(restored.favorites, isEmpty);
+    expect(restored.totalExperience, 0);
+    expect(restored.level, 1);
+    expect(restored.dailyGoal, 3);
+    expect(restored.visualTheme, AppVisualTheme.pinkMascot);
+    expect(restored.wordsInPack('保留词包').single.word, '保留的自定义词');
+  });
 }
