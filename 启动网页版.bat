@@ -13,15 +13,21 @@ if not exist "build\web\index.html" (
   )
 )
 
-where python >nul 2>nul
-if errorlevel 1 (
-  echo 未找到 Python，将直接打开 HTML 文件。
-  start "" "%~dp0build\web\index.html"
-  exit /b 0
+echo [求知] 网页地址：http://127.0.0.1:8765
+start "求知网页版服务" /min cmd /c "dart tool\web_server.dart"
+
+rem 等待服务真正可访问，避免浏览器先打开导致拒绝连接。
+for /l %%i in (1,1,15) do (
+  powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 http://127.0.0.1:8765/; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+  if not errorlevel 1 goto :open_browser
+  timeout /t 1 /nobreak >nul
 )
 
-echo [求知] 网页地址：http://127.0.0.1:8765
-start "求知网页版服务" /min python -m http.server 8765 --directory "build\web"
-timeout /t 1 /nobreak >nul
+echo.
+echo 网页服务启动失败，请确认 Dart/Flutter 已加入 PATH。
+pause
+exit /b 1
+
+:open_browser
 start "" "http://127.0.0.1:8765"
 exit /b 0

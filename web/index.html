@@ -49,7 +49,21 @@
     }
     @keyframes qiuzhi-pulse { 50% { transform: translateY(-6px); } }
   </style>
-  <div class="qiuzhi-loading">求知<br><small>正在整理今天的词汇…</small></div>
+  <div id="qiuzhi-loading" class="qiuzhi-loading">求知<br><small>正在整理今天的词汇…</small></div>
+  <script>
+    // Flutter 不会自动删除自定义启动遮罩。检测到渲染根节点后立即移除，
+    // 避免应用已经启动却一直显示“正在整理”。
+    const qiuzhiObserver = new MutationObserver(() => {
+      if (document.querySelector('flutter-view, flt-glass-pane')) {
+        document.getElementById('qiuzhi-loading')?.remove();
+        qiuzhiObserver.disconnect();
+      }
+    });
+    qiuzhiObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
