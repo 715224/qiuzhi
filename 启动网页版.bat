@@ -13,12 +13,12 @@ if not exist "build\web\index.html" (
   )
 )
 
-echo [求知] 网页地址：http://127.0.0.1:8765
+echo [求知] 网页地址：http://127.0.0.1:18765
 start "求知网页版服务" /min cmd /c "dart tool\web_server.dart"
 
 rem 等待服务真正可访问，避免浏览器先打开导致拒绝连接。
 for /l %%i in (1,1,15) do (
-  powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 http://127.0.0.1:8765/; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
+  powershell -NoProfile -Command "try { $r = Invoke-WebRequest -UseBasicParsing -TimeoutSec 1 http://127.0.0.1:18765/; if ($r.StatusCode -eq 200) { exit 0 } } catch {}; exit 1" >nul 2>nul
   if not errorlevel 1 goto :open_browser
   timeout /t 1 /nobreak >nul
 )
@@ -29,5 +29,5 @@ pause
 exit /b 1
 
 :open_browser
-start "" "http://127.0.0.1:8765"
+start "" "http://127.0.0.1:18765/?v=388e21c-fix"
 exit /b 0
