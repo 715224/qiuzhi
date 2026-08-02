@@ -6,7 +6,7 @@
 > 示例名词来自内置词库（通用 / 物理 / 哲学 / 心理学 / 工程测量），难度分 低 / 中 / 高。  
 > 后续可通过 GitHub 导入词库包，配合 WorkBuddy 自动化实现每日热词更新。
 
-> GitHub：https://github.com/715224/qiuzhi  
+> GitHub：https://github.com/715224/qiuzhi<br>
 > Gitee：https://gitee.com/ccy1028/the-pursuit-of-knowledge
 
 ---
