@@ -17,23 +17,42 @@ class FocusScreen extends StatefulWidget {
   State<FocusScreen> createState() => _FocusScreenState();
 }
 
-class _FocusScreenState extends State<FocusScreen> {
+class _FocusScreenState extends State<FocusScreen> with WidgetsBindingObserver {
   late final int _totalSeconds;
   late int _remaining;
   Timer? _timer;
   bool _finished = false;
+  // 以真实时间戳计时，避免后台/息屏时 Timer 被系统限流导致计时失准。
+  late DateTime _startTime;
 
   @override
   void initState() {
     super.initState();
     _totalSeconds = widget.minutes * 60;
     _remaining = _totalSeconds;
+    _startTime = DateTime.now();
+    WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_remaining <= 0) return;
-      setState(() => _remaining--);
-      if (_remaining == 0) _finish(_totalSeconds);
-    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  /// 自开始以来真实流逝的秒数（不超过总时长）。
+  int _elapsedSeconds() =>
+      DateTime.now().difference(_startTime).inSeconds.clamp(0, _totalSeconds);
+
+  void _tick() {
+    final remaining = _totalSeconds - _elapsedSeconds();
+    if (remaining <= 0) {
+      _finish(_elapsedSeconds());
+      return;
+    }
+    setState(() => _remaining = remaining);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 回到前台时立即按真实时间校正剩余时间，必要时完成计时。
+    if (state == AppLifecycleState.resumed && !_finished) _tick();
   }
 
   void _finish(int secondsSpent) {
@@ -73,7 +92,7 @@ class _FocusScreenState extends State<FocusScreen> {
           FilledButton(
             onPressed: () {
               Navigator.of(ctx).pop();
-              _finish(_totalSeconds - _remaining);
+              _finish(_elapsedSeconds());
             },
             child: const Text('结束'),
           ),
@@ -85,6 +104,7 @@ class _FocusScreenState extends State<FocusScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _exitImmersive();
     super.dispose();
   }
@@ -169,15 +189,6 @@ class _FocusScreenState extends State<FocusScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
-                '专注思考 · 不要查答案',
-                style: TextStyle(
-                  color: palette.soft,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
-                ),
-              ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

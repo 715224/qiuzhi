@@ -70,6 +70,13 @@ class _AiBookImportScreenState extends State<AiBookImportScreen> {
       final bytes = file.bytes ??
           (file.path == null ? null : await File(file.path!).readAsBytes());
       if (bytes == null) throw const FileSystemException('无法读取所选文件');
+      const maxBytes = 5 * 1024 * 1024; // 5MB 上限，避免大文件 OOM
+      if (bytes.length > maxBytes) {
+        throw FileSystemException(
+          '文件过大（${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB），'
+          '请选择小于 5 MB 的文件，或只粘贴部分正文。',
+        );
+      }
       final text = utf8.decode(bytes, allowMalformed: true);
       if (!mounted) return;
       final baseName = file.name.replaceFirst(RegExp(r'\.[^.]+$'), '');

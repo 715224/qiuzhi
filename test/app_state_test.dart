@@ -122,9 +122,28 @@ void main() {
     final level1 = state.wordsInPack(AppState.runoobPackNames[0]);
     final level2 = state.wordsInPack(AppState.runoobPackNames[1]);
     final level3 = state.wordsInPack(AppState.runoobPackNames[2]);
-    expect(level1, hasLength(28));
-    expect(level2, hasLength(95));
-    expect(level3, hasLength(123));
+    expect(level1, hasLength(78));
+    expect(level2, hasLength(199));
+    expect(level3, hasLength(286));
+    expect(
+      level3.map((word) => word.category).toSet(),
+      containsAll(['算法与数据结构', '代码语法', '常用函数']),
+    );
+    expect(
+      level3.singleWhere((word) => word.word == '动态规划（DP）').definition,
+      contains('典型写法'),
+    );
+    final storedRunoobWords = state.allWords
+        .where((word) => AppState.runoobPackNames.contains(word.pack))
+        .toList();
+    expect(
+      storedRunoobWords.map((word) => word.word).toSet(),
+      hasLength(storedRunoobWords.length),
+    );
+    expect(
+      level3.singleWhere((word) => word.word == 'JavaScript 可选链').definition,
+      contains('user.profile?.name'),
+    );
     expect(
       level2.map((word) => word.word).toSet(),
       containsAll(level1.map((word) => word.word)),
@@ -172,8 +191,9 @@ void main() {
 
     for (var index = 0; index < plan.length; index++) {
       final current = state.getTodayWord();
+      expect(current, isNotNull);
       state.saveToday(
-        word: current,
+        word: current!,
         userExplanation: '测试解释',
         secondsSpent: 60,
       );

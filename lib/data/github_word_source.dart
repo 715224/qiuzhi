@@ -13,6 +13,7 @@ class GithubWordSource {
   static Future<List<Word>> fetch(
     String input, {
     http.Client? client,
+    String? requiredPublishedDate,
   }) async {
     final candidates = candidateUris(input);
     Object? lastError;
@@ -47,6 +48,19 @@ class GithubWordSource {
           lastError = '词库中没有可用名词';
           continue;
         }
+        final requiredDate = requiredPublishedDate?.trim() ?? '';
+        if (requiredDate.isNotEmpty &&
+            !words.any((word) => word.publishedDate == requiredDate)) {
+          final dates = words
+              .map((word) => word.publishedDate)
+              .where((date) => date.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+          final latest = dates.isEmpty ? '日期未知' : dates.last;
+          lastError = '$uri 仍是旧缓存（最新 $latest，需要 $requiredDate）';
+          continue;
+        }
         return words;
       } catch (error) {
         lastError = error;
@@ -68,11 +82,14 @@ class GithubWordSource {
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
       throw const FormatException('地址格式不正确');
     }
-    if (uri.scheme != 'https' && uri.scheme != 'http') {
-      throw const FormatException('地址必须以 http:// 或 https:// 开头');
+    if (uri.scheme != 'https') {
+      throw const FormatException('为安全起见，词库地址必须为 https');
     }
 
     final host = uri.host.toLowerCase();
+    if (_isPrivateOrLocalhost(host)) {
+      throw const FormatException('不支持访问内网或本机地址');
+    }
     if (host == 'raw.githubusercontent.com') {
       final rawParts =
           uri.pathSegments.where((part) => part.isNotEmpty).toList();
@@ -118,14 +135,35 @@ class GithubWordSource {
       ('master', 'words.example.json'),
     ];
 
-    // 先遍历 CDN 和 API，全部失败后才尝试常被拦截的 Raw。
+    // GitHub API 能直接读取分支最新内容，优先于可能缓存旧 master 的 CDN；
+    // Raw 放在最后，兼容部分网络无法解析 raw.githubusercontent.com 的情况。
     return [
       for (final file in files) ...[
-        _jsDelivrUri(owner, repository, file.$1, file.$2),
         _apiUri(owner, repository, file.$1, file.$2),
+        _jsDelivrUri(owner, repository, file.$1, file.$2),
       ],
       for (final file in files) _rawUri(owner, repository, file.$1, file.$2),
     ];
+  }
+
+  static bool _isPrivateOrLocalhost(String host) {
+    final h = host.toLowerCase();
+    if (h == 'localhost' || h == '127.0.0.1' || h == '::1' || h == '0.0.0.0') {
+      return true;
+    }
+    if (h.startsWith('10.') ||
+        h.startsWith('192.168.') ||
+        h.startsWith('169.254.')) {
+      return true;
+    }
+    if (h.startsWith('172.')) {
+      final parts = h.split('.');
+      if (parts.length >= 2) {
+        final n = int.tryParse(parts[1]);
+        if (n != null && n >= 16 && n <= 31) return true;
+      }
+    }
+    return false;
   }
 
   static List<Uri> _githubFileCandidates(
@@ -135,8 +173,8 @@ class GithubWordSource {
     String path,
   ) {
     return [
-      _jsDelivrUri(owner, repository, branch, path),
       _apiUri(owner, repository, branch, path),
+      _jsDelivrUri(owner, repository, branch, path),
       _rawUri(owner, repository, branch, path),
     ];
   }
@@ -146,9 +184,10 @@ class GithubWordSource {
       return const {
         'Accept': 'application/vnd.github.raw+json',
         'User-Agent': 'qiuzhi-app',
+        'Cache-Control': 'no-cache',
       };
     }
-    return const {};
+    return const {'Cache-Control': 'no-cache'};
   }
 
   static Uri _jsDelivrUri(

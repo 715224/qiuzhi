@@ -53,6 +53,7 @@ class _Home extends StatefulWidget {
 
 class _HomeState extends State<_Home> with WidgetsBindingObserver {
   int _index = 0;
+  Timer? _hotwordRetryTimer;
   final _pages = const [
     TodayScreen(),
     HotwordLibraryScreen(),
@@ -65,10 +66,17 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // App 保持前台跨过中午时也会刷新；若发布或 CDN 稍有延迟，
+    // 因“当天尚未成功”而每 15 分钟自动重试，不需要用户改地址。
+    _hotwordRetryTimer = Timer.periodic(const Duration(minutes: 15), (_) {
+      if (!mounted) return;
+      unawaited(context.read<AppState>().refreshRemoteIfDue());
+    });
   }
 
   @override
   void dispose() {
+    _hotwordRetryTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

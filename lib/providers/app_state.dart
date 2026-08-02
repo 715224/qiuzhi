@@ -130,9 +130,22 @@ class AppState extends ChangeNotifier {
   }
 
   List<Word> wordsInPack(String pack) {
-    final words = allWords.where((word) => word.pack == pack).toList()
+    final selectedLevel = runoobPackNames.indexOf(pack);
+    final words = allWords.where((word) {
+      if (selectedLevel < 0) return word.pack == pack;
+      final wordLevel = runoobPackNames.indexOf(word.pack);
+      return wordLevel >= 0 && wordLevel <= selectedLevel;
+    }).toList()
       ..sort((a, b) => a.id.compareTo(b.id));
     return words;
+  }
+
+  /// 菜鸟教程词汇只保存一次：选择二/三级时，逻辑上同时包含更低级词汇。
+  bool isWordInEnabledPack(Word word) {
+    final wordLevel = runoobPackNames.indexOf(word.pack);
+    if (wordLevel < 0) return _enabledPacks.contains(word.pack);
+    final selectedLevel = runoobPackNames.indexWhere(_enabledPacks.contains);
+    return selectedLevel >= wordLevel;
   }
 
   /// 某个包的名词数量（含远程包）。
@@ -210,7 +223,15 @@ class AppState extends ChangeNotifier {
     if (customIndex >= 0) {
       _customWords[customIndex] = edited;
     } else if (original == null) {
-      _customWords.add(edited);
+      // 同包同名已存在则更新，避免重复词条。
+      final dupIndex = _customWords.indexWhere(
+        (item) => item.pack == edited.pack && item.word == edited.word,
+      );
+      if (dupIndex >= 0) {
+        _customWords[dupIndex] = edited.copyWith(id: _customWords[dupIndex].id);
+      } else {
+        _customWords.add(edited);
+      }
     } else {
       _wordOverrides[edited.id] = edited;
     }
@@ -406,8 +427,9 @@ class AppState extends ChangeNotifier {
         ..._customWords,
       ]);
 
-  Word getTodayWord() {
+  Word? getTodayWord() {
     final plan = getTodayWords();
+    if (plan.isEmpty) return null;
     final records = todayRecords();
     if (records.length >= plan.length && records.isNotEmpty) {
       return wordById(records.last.wordId) ?? plan.last;
@@ -424,15 +446,14 @@ class AppState extends ChangeNotifier {
         .where((w) =>
             _selectedFields.contains(w.field) &&
             w.difficulty == _difficulty &&
-            _enabledPacks.contains(w.pack))
+            isWordInEnabledPack(w))
         .toList();
 
     // 兜底：当前筛选下无词，放宽难度
     if (eligible.isEmpty) {
       eligible = allWords
           .where((w) =>
-              _selectedFields.contains(w.field) &&
-              _enabledPacks.contains(w.pack))
+              _selectedFields.contains(w.field) && isWordInEnabledPack(w))
           .toList();
     }
     // 词数不足时从全库补齐，保证每日目标可完成。
@@ -441,6 +462,7 @@ class AppState extends ChangeNotifier {
       eligible.addAll(allWords.where((word) => ids.add(word.id)));
     }
     if (eligible.isEmpty) eligible = List.from(allWords);
+    if (eligible.isEmpty) return const []; // 词库全空，避免除零崩溃
 
     final dayIndex = _daysSinceEpoch(DateTime.now());
     final start = dayIndex % eligible.length;
@@ -470,7 +492,11 @@ class AppState extends ChangeNotifier {
     _remoteError = null;
     notifyListeners();
     try {
-      final words = await GithubWordSource.fetch(_remoteUrl);
+      final expectedPeriod = currentHotwordPeriod;
+      final words = await GithubWordSource.fetch(
+        _remoteUrl,
+        requiredPublishedDate: expectedPeriod,
+      );
       final merged = <int, Word>{
         for (final word in _remoteWords) word.id: word,
       };
@@ -484,7 +510,8 @@ class AppState extends ChangeNotifier {
           return byDate != 0 ? byDate : b.id.compareTo(a.id);
         });
       _remoteUpdatedAt = DateTime.now();
-      _lastHotwordPeriod = currentHotwordPeriod;
+      // 只有远端确实包含当前北京时间周期的数据，才停止当天自动重试。
+      _lastHotwordPeriod = expectedPeriod;
       _remoteError = null;
     } catch (e) {
       _remoteError = e.toString().replaceFirst('Exception: ', '');
@@ -647,7 +674,21 @@ class AppState extends ChangeNotifier {
     unawaited(refreshRemoteIfDue());
   }
 
-  Future<void> _save() async {
+  Future<void>? _saveInFlight;
+
+  /// 串行化持久化，避免并发写入造成字段互相覆盖的竞态。
+  Future<void> _save() {
+    final next = (_saveInFlight == null
+        ? _doSave()
+        : _saveInFlight!.then((_) => _doSave()));
+    _saveInFlight = next;
+    next.whenComplete(() {
+      if (identical(_saveInFlight, next)) _saveInFlight = null;
+    });
+    return next;
+  }
+
+  Future<void> _doSave() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedFields', _selectedFields.join(','));
@@ -697,12 +738,16 @@ class AppState extends ChangeNotifier {
         incoming.category.isNotEmpty && incoming.category != incoming.field;
     return Word(
       id: incoming.id,
-      word: incoming.word,
-      pinyin: incoming.pinyin,
-      field: incoming.field,
-      difficulty: incoming.difficulty,
-      pack: incoming.pack,
-      definition: incoming.definition,
+      word: incoming.word.isNotEmpty ? incoming.word : cached.word,
+      pinyin: incoming.pinyin.isNotEmpty ? incoming.pinyin : cached.pinyin,
+      field: incoming.field.isNotEmpty ? incoming.field : cached.field,
+      difficulty: incoming.difficulty.isNotEmpty
+          ? incoming.difficulty
+          : cached.difficulty,
+      pack: incoming.pack.isNotEmpty ? incoming.pack : cached.pack,
+      definition: incoming.definition.isNotEmpty
+          ? incoming.definition
+          : cached.definition,
       publishedDate: incoming.publishedDate.isNotEmpty
           ? incoming.publishedDate
           : cached.publishedDate,
@@ -760,15 +805,19 @@ class HistoryRecord {
   });
 
   factory HistoryRecord.fromJson(Map<String, dynamic> j) => HistoryRecord(
-        date: j['date'],
-        wordId: j['wordId'],
-        wordText: j['wordText'],
-        field: j['field'],
-        difficulty: j['difficulty'],
-        pack: j['pack'],
-        userExplanation: j['userExplanation'] ?? '',
-        definition: j['definition'] ?? '',
-        secondsSpent: j['secondsSpent'] ?? 0,
+        date: (j['date'] ?? '').toString(),
+        wordId: j['wordId'] is int
+            ? j['wordId'] as int
+            : (int.tryParse('${j['wordId']}') ?? 0),
+        wordText: (j['wordText'] ?? '').toString(),
+        field: (j['field'] ?? '').toString(),
+        difficulty: (j['difficulty'] ?? '').toString(),
+        pack: (j['pack'] ?? '').toString(),
+        userExplanation: (j['userExplanation'] ?? '').toString(),
+        definition: (j['definition'] ?? '').toString(),
+        secondsSpent: j['secondsSpent'] is int
+            ? j['secondsSpent'] as int
+            : (int.tryParse('${j['secondsSpent']}') ?? 0),
         done: j['done'] ?? true,
       );
 
@@ -787,7 +836,18 @@ class HistoryRecord {
 
   static Map<String, HistoryRecord> fromJsonString(String s) {
     final Map<String, dynamic> raw = (jsonDecode(s) as Map<String, dynamic>);
-    return raw.map((k, v) => MapEntry(k, HistoryRecord.fromJson(v)));
+    final out = <String, HistoryRecord>{};
+    raw.forEach((k, v) {
+      // 逐条解析：单条损坏仅跳过该条，不影响其余历史。
+      if (v is Map<String, dynamic>) {
+        try {
+          out[k] = HistoryRecord.fromJson(v);
+        } catch (_) {
+          // 跳过损坏记录
+        }
+      }
+    });
+    return out;
   }
 
   static String toJsonString(Map<String, HistoryRecord> map) {

@@ -11,8 +11,10 @@ void main() {
         'https://github.com/715224/qiuzhi',
       ).map((uri) => uri.toString()).toList();
 
-      expect(urls.first,
-          'https://cdn.jsdelivr.net/gh/715224/qiuzhi@master/daily_hotwords/library.json');
+      expect(
+        urls.first,
+        'https://api.github.com/repos/715224/qiuzhi/contents/daily_hotwords/library.json?ref=master',
+      );
       expect(
         urls,
         contains(
@@ -41,8 +43,8 @@ void main() {
       );
 
       expect(urls.map((uri) => uri.host), [
-        'cdn.jsdelivr.net',
         'api.github.com',
+        'cdn.jsdelivr.net',
         'raw.githubusercontent.com',
       ]);
     });
@@ -51,7 +53,7 @@ void main() {
       const raw =
           'https://raw.githubusercontent.com/715224/qiuzhi/master/words.example.json';
       final urls = GithubWordSource.candidateUris(raw);
-      expect(urls.first.host, 'cdn.jsdelivr.net');
+      expect(urls.first.host, 'api.github.com');
       expect(urls.last.toString(), raw);
     });
   });
@@ -77,10 +79,36 @@ void main() {
     );
 
     expect(words.single.word, '大模型');
-    expect(requested.first.host, 'cdn.jsdelivr.net');
+    expect(requested.first.host, 'api.github.com');
     expect(
       requested.last.toString(),
       'https://cdn.jsdelivr.net/gh/715224/qiuzhi@master/words.example.json',
     );
+  });
+
+  test('rejects stale CDN data and accepts a source containing current date',
+      () async {
+    var requestCount = 0;
+    final client = MockClient((request) async {
+      requestCount++;
+      final date = requestCount == 1 ? '2026-08-01' : '2026-08-02';
+      return http.Response.bytes(
+        utf8.encode(
+          '[{"id":2026080201,"word":"测试热词","pack":"每日热词",'
+          '"publishedDate":"$date"}]',
+        ),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    });
+
+    final words = await GithubWordSource.fetch(
+      'https://github.com/715224/qiuzhi',
+      client: client,
+      requiredPublishedDate: '2026-08-02',
+    );
+
+    expect(requestCount, 2);
+    expect(words.single.publishedDate, '2026-08-02');
   });
 }

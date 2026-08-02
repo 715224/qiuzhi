@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/word.dart';
 import '../providers/app_state.dart';
+import '../services/sound_service.dart';
 import '../theme/pixel_theme.dart';
 import '../widgets/pixel_ui.dart';
 import 'focus_screen.dart';
@@ -18,23 +19,53 @@ class TodayScreen extends StatefulWidget {
   State<TodayScreen> createState() => _TodayScreenState();
 }
 
-class _TodayScreenState extends State<TodayScreen> {
+class _TodayScreenState extends State<TodayScreen>
+    with TickerProviderStateMixin {
   final _random = Random();
   bool _drawing = false;
   int? _revealedWordId;
   Word? _rollingWord;
 
+  /// 抽取时吉祥物晃动动画控制器。
+  late final AnimationController _shakeController;
+  late final Animation<double> _shakeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    // 用 sine 波形驱动左右晃动 + 轻微旋转，循环播放更自然。
+    _shakeAnimation = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _shakeController.dispose();
+    super.dispose();
+  }
+
   Future<void> _drawWord(AppState app) async {
     if (_drawing) return;
     final target = app.getTodayWord();
+    if (target == null) return; // 词库为空，无法抽取
     final pool = app.allWords
         .where(
           (word) =>
               app.selectedFields.contains(word.field) &&
-              app.enabledPacks.contains(word.pack),
+              app.isWordInEnabledPack(word),
         )
         .toList();
     if (pool.isEmpty) pool.add(target);
+
+    // 启动晃动动画 + 滚动音效
+    _shakeController.repeat();
+    SoundService.instance.playDrawRoll();
+
     setState(() {
       _drawing = true;
       _rollingWord = pool[_random.nextInt(pool.length)];
@@ -51,6 +82,13 @@ class _TodayScreenState extends State<TodayScreen> {
             frame == frames - 1 ? target : pool[_random.nextInt(pool.length)];
       });
     }
+
+    // 停止晃动动画 + 滚动音效，播放揭晓音效
+    _shakeController.stop();
+    _shakeController.value = 0;
+    SoundService.instance.stopDrawRoll();
+    SoundService.instance.playReveal();
+
     if (!mounted) return;
     setState(() {
       _drawing = false;
@@ -64,6 +102,22 @@ class _TodayScreenState extends State<TodayScreen> {
     final app = context.watch<AppState>();
     final palette = context.pixelPalette;
     final word = app.getTodayWord();
+    if (word == null) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                '词库为空，请在「我的」中开启词包或导入远程词库后再来。',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: palette.muted, fontSize: 14),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final done = app.isDoneToday();
     final record = app.todayRecord();
     final completed = app.todayCompletedCount;
@@ -105,10 +159,9 @@ class _TodayScreenState extends State<TodayScreen> {
                           onTap: () => _showRangeSheet(context),
                         ),
                         const SizedBox(height: 16),
-                        AnimatedScale(
-                          scale: _drawing ? 1.08 : 1,
-                          duration: const Duration(milliseconds: 120),
-                          child: const ThemeMascot(size: 116, variant: 2),
+                        _AnimatedMascot(
+                          drawing: _drawing,
+                          shakeAnimation: _shakeAnimation,
                         ),
                         const SizedBox(height: 6),
                         AnimatedSwitcher(
@@ -464,7 +517,7 @@ class _TodayScreenState extends State<TodayScreen> {
           final completed = {
             for (final record in records) record.wordId: record
           };
-          final currentId = app.isDoneToday() ? null : app.getTodayWord().id;
+          final currentId = app.isDoneToday() ? null : app.getTodayWord()?.id;
           return FractionallySizedBox(
             heightFactor: .78,
             child: Column(
@@ -617,6 +670,49 @@ class _TodayPlanButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// 抽取时带流畅晃动动画的吉祥物组件。
+/// 组合左右摇摆 + 轻微旋转 + 弹性缩放，营造抽卡摇晃感。
+class _AnimatedMascot extends StatelessWidget {
+  final bool drawing;
+  final Animation<double> shakeAnimation;
+
+  const _AnimatedMascot({
+    required this.drawing,
+    required this.shakeAnimation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: shakeAnimation,
+      builder: (context, child) {
+        // sine 波驱动：0→1→0 循环，产生 -1..1 的摆动值
+        final t = shakeAnimation.value;
+        final sine = sin(t * pi * 2); // -1..1
+
+        // 抽取中：左右平移 ±10px + 旋转 ±0.12rad + 轻微缩放脉冲
+        // 静止：全部归零
+        final dx = drawing ? sine * 10.0 : 0.0;
+        final angle = drawing ? sine * 0.12 : 0.0;
+        final scale = drawing ? 1.0 + (1 - sine.abs()) * 0.08 : 1.0;
+
+        return Transform.translate(
+          offset: Offset(dx, 0),
+          child: Transform.rotate(
+            angle: angle,
+            alignment: Alignment.bottomCenter,
+            child: Transform.scale(
+              scale: scale,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: const ThemeMascot(size: 116, variant: 2),
     );
   }
 }

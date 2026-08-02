@@ -33,15 +33,30 @@ class Word {
 
   /// 从远程词库 JSON 解析（字段缺失时给合理默认值，保证不崩）。
   factory Word.fromJson(Map<String, dynamic> j) {
-    final id = j['id'] is int ? j['id'] as int : (j['id']?.hashCode ?? 0);
+    final wordStr = (j['word'] ?? '').toString();
+    final packStr = (j['pack'] ?? '').toString();
+    final rawId = j['id'];
+    int id;
+    if (rawId is int) {
+      id = rawId;
+    } else if (rawId is num) {
+      id = rawId.toInt();
+    } else if (rawId is String && int.tryParse(rawId) != null) {
+      id = int.parse(rawId);
+    } else if (rawId == null || rawId == 0) {
+      // 缺失 id：基于 word+pack 生成稳定 id，避免多条都落到 0 互相覆盖。
+      id = '$wordStr\u0000$packStr'.hashCode;
+    } else {
+      id = rawId.hashCode;
+    }
     final field = (j['field'] ?? '通用').toString();
     return Word(
       id: id,
-      word: (j['word'] ?? '').toString(),
+      word: wordStr,
       pinyin: (j['pinyin'] ?? '').toString(),
       field: field,
       difficulty: (j['difficulty'] ?? '中').toString(),
-      pack: (j['pack'] ?? '').toString(),
+      pack: packStr,
       definition: (j['definition'] ?? '').toString(),
       publishedDate: (j['publishedDate'] ?? _dateFromId(id)).toString(),
       category: (j['category'] ?? field).toString(),

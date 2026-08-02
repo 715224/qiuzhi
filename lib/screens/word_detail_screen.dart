@@ -117,10 +117,23 @@ class WordDetailScreen extends StatelessWidget {
             if (word.sourceUrl.isNotEmpty) ...[
               const SizedBox(height: 14),
               OutlinedButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(word.sourceUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
+                onPressed: () {
+                  final uri = Uri.tryParse(word.sourceUrl);
+                  if (uri == null || uri.host.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('链接地址无效')),
+                    );
+                    return;
+                  }
+                  const allowed = {'http', 'https'};
+                  if (!allowed.contains(uri.scheme)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('仅支持打开 http/https 链接')),
+                    );
+                    return;
+                  }
+                  launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('打开对应教程'),
               ),

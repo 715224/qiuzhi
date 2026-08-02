@@ -1,7 +1,7 @@
 name: qiuzhi
 description: 求知 - 每天一个名词，15分钟思考，用自己的话解释它。
 publish_to: 'none'
-version: 0.3.3+16
+version: 0.3.7+20
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -25,5 +25,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/pink_mascot/
+    - assets/sounds/
     - daily_hotwords/library.json
     - assets/word_packs/runoob.json

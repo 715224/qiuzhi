@@ -23,6 +23,20 @@ class AiModelConfig {
 
   bool get isReady => endpoint.trim().isNotEmpty && model.trim().isNotEmpty;
 
+  /// endpoint 是否指向本机（允许 http，用于本地模型）。
+  bool get isLocalhostEndpoint {
+    final uri = Uri.tryParse(endpoint.trim());
+    if (uri == null) return false;
+    final host = uri.host.toLowerCase();
+    return host == 'localhost' || host == '127.0.0.1' || host == '::1';
+  }
+
+  /// endpoint 是否为会被中间人窃听的非加密 http（本机地址除外）。
+  bool get usesInsecureHttp {
+    final uri = Uri.tryParse(endpoint.trim());
+    return uri != null && uri.scheme == 'http' && !isLocalhostEndpoint;
+  }
+
   String get chatCompletionsUrl {
     final value = endpoint.trim().replaceFirst(RegExp(r'/+$'), '');
     if (value.endsWith('/chat/completions')) return value;
@@ -154,6 +168,11 @@ class AiBookService {
     required String system,
     required String user,
   }) async {
+    if (config.usesInsecureHttp) {
+      throw const FormatException(
+        '接口地址为 http 明文，API Key 会被窃听。请改用 https，或使用本机地址（localhost/127.0.0.1）。',
+      );
+    }
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (config.apiKey.trim().isNotEmpty) {
       headers['Authorization'] = 'Bearer ${config.apiKey.trim()}';
@@ -173,15 +192,24 @@ class AiBookService {
         )
         .timeout(const Duration(seconds: 120));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final body = utf8.decode(response.bodyBytes, allowMalformed: true);
-      throw Exception('模型接口返回 ${response.statusCode}：${_shorten(body)}');
+      // 不把响应体拼进异常，避免网关回显请求头时泄露 API Key。
+      throw Exception(
+        '模型接口返回 HTTP ${response.statusCode}，请检查接口地址、模型名与 API Key。',
+      );
     }
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is! Map) {
+      throw const FormatException('模型响应格式异常。');
+    }
     final choices = decoded['choices'];
     if (choices is! List || choices.isEmpty) {
       throw const FormatException('模型响应中没有 choices。');
     }
-    final message = choices.first['message'];
+    final first = choices.first;
+    if (first is! Map) {
+      throw const FormatException('模型响应中没有 message。');
+    }
+    final message = first['message'];
     final content = message is Map ? message['content'] : null;
     if (content is! String || content.trim().isEmpty) {
       throw const FormatException('模型没有返回可读取的文本内容。');
@@ -251,11 +279,6 @@ class AiBookService {
     final difficulty = (value ?? '').toString().trim();
     if (difficulty == '低' || difficulty == '高') return difficulty;
     return '中';
-  }
-
-  static String _shorten(String value) {
-    final compact = value.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return compact.length > 240 ? '${compact.substring(0, 240)}…' : compact;
   }
 
   static String _systemPrompt(int maxTerms) => '''
