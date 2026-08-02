@@ -24,6 +24,7 @@ class AppState extends ChangeNotifier {
   /// 远程「每日热词」词库包名（与 GitHub 拉取的 pack 字段对应）。
   static const String remotePackName = '每日热词';
   static const String defaultRemoteUrl = 'https://github.com/715224/qiuzhi';
+  static const int _remoteRefreshPolicyVersion = 2;
   static const List<String> runoobPackNames = [
     '菜鸟教程词汇包·一级（基础）',
     '菜鸟教程词汇包·二级（进阶）',
@@ -599,6 +600,13 @@ class AppState extends ChangeNotifier {
       final remoteUrl = prefs.getString('remoteUrl');
       if (remoteUrl != null) _remoteUrl = remoteUrl;
       _lastHotwordPeriod = prefs.getString('lastHotwordPeriod') ?? '';
+      final storedRefreshPolicyVersion =
+          prefs.getInt('remoteRefreshPolicyVersion') ?? 0;
+      if (storedRefreshPolicyVersion < _remoteRefreshPolicyVersion) {
+        // 旧版本可能把 CDN 旧缓存误记为“当天已更新”。升级后强制复核一次，
+        // 用户无需修改仓库地址或清除 App 数据。
+        _lastHotwordPeriod = '';
+      }
 
       final remoteRaw = prefs.getString('remoteWords');
       if (remoteRaw != null && remoteRaw.isNotEmpty) {
@@ -706,6 +714,10 @@ class AppState extends ChangeNotifier {
       await prefs.setString(
           'remoteUpdatedAt', _remoteUpdatedAt?.toIso8601String() ?? '');
       await prefs.setString('lastHotwordPeriod', _lastHotwordPeriod);
+      await prefs.setInt(
+        'remoteRefreshPolicyVersion',
+        _remoteRefreshPolicyVersion,
+      );
       await prefs.setString(
         'wordOverrides',
         jsonEncode(_wordOverrides.values.map((word) => word.toJson()).toList()),
