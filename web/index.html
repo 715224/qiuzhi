@@ -18,21 +18,38 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="求知：每天抽取多个词汇，用一句话解释、生活类比、实际应用和常见误区帮助理解。">
+  <meta name="theme-color" content="#36c9c6">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="qiuzhi">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="求知">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>qiuzhi</title>
+  <title>求知 · 每日词汇学习</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #f2fbfa; }
+    .qiuzhi-loading {
+      position: fixed; inset: 0; display: grid; place-content: center;
+      color: #143c3a; font: 700 16px/1.6 system-ui, sans-serif;
+      letter-spacing: 2px; text-align: center;
+    }
+    .qiuzhi-loading::before {
+      content: ''; width: 42px; height: 42px; margin: 0 auto 16px;
+      background: #36c9c6; border: 3px solid #143c3a;
+      box-shadow: 6px 6px 0 #143c3a;
+      animation: qiuzhi-pulse .8s steps(2, end) infinite;
+    }
+    @keyframes qiuzhi-pulse { 50% { transform: translateY(-6px); } }
+  </style>
+  <div class="qiuzhi-loading">求知<br><small>正在整理今天的词汇…</small></div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

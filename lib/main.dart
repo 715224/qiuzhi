@@ -90,14 +90,169 @@ class _HomeState extends State<_Home> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: _pages,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final desktop = constraints.maxWidth >= 900;
+        final content = IndexedStack(
+          index: _index,
+          children: _pages,
+        );
+        if (!desktop) {
+          return Scaffold(
+            body: content,
+            bottomNavigationBar: _PixelNavigation(
+              selectedIndex: _index,
+              onSelected: (i) => setState(() => _index = i),
+            ),
+          );
+        }
+
+        final palette = context.pixelPalette;
+        return Scaffold(
+          backgroundColor: palette.paper,
+          body: SafeArea(
+            child: Row(
+              children: [
+                _PixelDesktopNavigation(
+                  selectedIndex: _index,
+                  onSelected: (i) => setState(() => _index = i),
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 860),
+                      child: content,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PixelDesktopNavigation extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _PixelDesktopNavigation({
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.pixelPalette;
+    return Container(
+      width: 188,
+      decoration: BoxDecoration(
+        color: palette.white,
+        border: Border(right: BorderSide(color: palette.ink, width: 2)),
       ),
-      bottomNavigationBar: _PixelNavigation(
-        selectedIndex: _index,
-        onSelected: (i) => setState(() => _index = i),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 28, 18, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '求知',
+                  style: TextStyle(
+                    color: palette.ink,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 6,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '每天抽取 · 逐词积累',
+                  style: TextStyle(
+                    color: palette.muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var index = 0; index < _PixelNavigation._items.length; index++)
+            _DesktopNavigationItem(
+              icon: _PixelNavigation._items[index].$1,
+              label: _PixelNavigation._items[index].$2,
+              selected: selectedIndex == index,
+              onTap: () => onSelected(index),
+            ),
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Text(
+              'WEB / PWA',
+              style: TextStyle(
+                color: palette.muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DesktopNavigationItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _DesktopNavigationItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.pixelPalette;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: selected ? palette.accent : Colors.transparent,
+            border: Border.all(
+              color: selected ? palette.ink : Colors.transparent,
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 21, color: palette.ink),
+              const SizedBox(width: 13),
+              Text(
+                label,
+                style: TextStyle(
+                  color: palette.ink,
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

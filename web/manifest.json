@@ -1,12 +1,12 @@
 {
-    "name": "qiuzhi",
-    "short_name": "qiuzhi",
+    "name": "求知 · 每日词汇学习",
+    "short_name": "求知",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#f2fbfa",
+    "theme_color": "#36c9c6",
+    "description": "每天抽取多个词汇，建立自己的分级词包。",
+    "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
         {
