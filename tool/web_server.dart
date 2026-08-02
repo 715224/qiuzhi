@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-const _port = 18765;
+const _defaultPort = 18765;
 
-Future<void> main() async {
+Future<void> main(List<String> arguments) async {
+  final port = arguments.isEmpty
+      ? _defaultPort
+      : int.tryParse(arguments.first) ?? _defaultPort;
   final root = Directory('build/web');
   if (!root.existsSync()) {
     stderr.writeln('找不到 build/web，请先构建网页版。');
@@ -13,13 +16,13 @@ Future<void> main() async {
 
   late final HttpServer server;
   try {
-    server = await HttpServer.bind(InternetAddress.loopbackIPv4, _port);
+    server = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
   } on SocketException {
     // 已有求知网页服务运行时，启动器可以直接复用它。
     return;
   }
 
-  stdout.writeln('求知网页版：http://127.0.0.1:$_port');
+  stdout.writeln('求知网页版：http://127.0.0.1:$port');
   await for (final request in server) {
     await _serve(request, root);
   }
@@ -42,7 +45,10 @@ Future<void> _serve(HttpRequest request, Directory root) async {
   }
 
   request.response.headers.contentType = _contentType(file.path);
-  request.response.headers.set('Cache-Control', 'no-cache');
+  request.response.headers
+    ..set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    ..set('Pragma', 'no-cache')
+    ..set('Expires', '0');
   await request.response.addStream(file.openRead());
   await request.response.close();
 }
