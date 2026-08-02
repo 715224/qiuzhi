@@ -12,6 +12,7 @@
     "lifeAnalogy": "用一个具体、熟悉的生活场景来类比这个词。",
     "practicalApplication": "说明这个词在日常生活或工作中的实际用途。",
     "commonMisconception": "指出大家理解这个词时最容易犯的一个错误。",
-    "definition": "在这里填写一条准确、完整、适合用自己的语言复述的中文定义。"
+    "definition": "在这里填写一条准确、完整、适合用自己的语言复述的中文定义。",
+    "sourceUrl": "https://example.com/source-link"
   }
 ]

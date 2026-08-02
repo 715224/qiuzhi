@@ -83,6 +83,12 @@
         "type": "string",
         "minLength": 10,
         "maxLength": 300
+      },
+      "sourceUrl": {
+        "type": "string",
+        "format": "uri",
+        "maxLength": 500,
+        "description": "热词出处/原文链接，标注信息来源"
       }
     }
   }
