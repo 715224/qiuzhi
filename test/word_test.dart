@@ -2,6 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:qiuzhi/models/word.dart';
 
 void main() {
+  test('旧热词缓存中的已知乱码会自动修复', () {
+    final word = Word.fromJson({
+      'id': 2026080207,
+      'word': '原研药',
+      'field': '通用',
+      'difficulty': '中',
+      'pack': '每日热词',
+      'category': '��康',
+      'definition': '缓存命中折扣��把成本降低。',
+      'commonMisconception': '不要一味堆细��，也不要暂停交��一段时间。',
+    });
+
+    expect(word.category, '健康');
+    expect(word.definition, '缓存命中折扣价，把成本降低。');
+    expect(word.commonMisconception, '不要一味堆细节，也不要暂停交易一段时间。');
+  });
+
   test('旧热词可从 ID 推导发布日期并用领域作默认类型', () {
     final word = Word.fromJson({
       'id': 2026080101,

@@ -23,7 +23,7 @@
 ## 自动化必须完成的动作
 
 1. **采集热点**：从上述来源获取过去 24 小时内最热的新闻和话题。
-2. **提炼关键词**：从热点中提炼 5~10 个最核心、最具教��价值的关键词（优先选择背后有可解释概念的词，而非纯娱乐八卦）。
+2. **提炼关键词**：从热点中提炼 5~10 个最核心、最具教育价值的关键词（优先选择背后有可解释概念的词，而非纯娱乐八卦）。
 3. **生成词条**：按 `daily.template.json` 格式为每个词生成完整内容：
    - `simpleExplanation`：一句小学生也能听懂的话
    - `lifeAnalogy`：一个具体、熟悉的生活场景类比
@@ -42,7 +42,7 @@
    - `updatedAt`
    - `sourceFile`
    - `wordCount`
-9. 确认 JSON 为 UTF-8、可解析、ID 无重复、字段值合法，`sourceUrl` 不为空。
+9. 运行 `dart tool/validate_hotwords.dart`，确认 JSON 为 UTF-8、可解析、不含 U+FFFD 替换符、ID 无重复、字段值合法，`sourceUrl` 不为空。
 10. 校验格式无误后，Git 提交信息固定为 `hotwords: publish YYYY-MM-DD`，并推送到远程仓库。
 
 ## 内容质量要求

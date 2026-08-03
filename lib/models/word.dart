@@ -33,8 +33,8 @@ class Word {
 
   /// 从远程词库 JSON 解析（字段缺失时给合理默认值，保证不崩）。
   factory Word.fromJson(Map<String, dynamic> j) {
-    final wordStr = (j['word'] ?? '').toString();
-    final packStr = (j['pack'] ?? '').toString();
+    final wordStr = _repairKnownEncodingDamage((j['word'] ?? '').toString());
+    final packStr = _repairKnownEncodingDamage((j['pack'] ?? '').toString());
     final rawId = j['id'];
     int id;
     if (rawId is int) {
@@ -49,24 +49,46 @@ class Word {
     } else {
       id = rawId.hashCode;
     }
-    final field = (j['field'] ?? '通用').toString();
+    final field = _repairKnownEncodingDamage((j['field'] ?? '通用').toString());
     return Word(
       id: id,
       word: wordStr,
-      pinyin: (j['pinyin'] ?? '').toString(),
+      pinyin: _repairKnownEncodingDamage((j['pinyin'] ?? '').toString()),
       field: field,
-      difficulty: (j['difficulty'] ?? '中').toString(),
+      difficulty:
+          _repairKnownEncodingDamage((j['difficulty'] ?? '中').toString()),
       pack: packStr,
-      definition: (j['definition'] ?? '').toString(),
+      definition: _repairKnownEncodingDamage(
+        (j['definition'] ?? '').toString(),
+      ),
       publishedDate: (j['publishedDate'] ?? _dateFromId(id)).toString(),
-      category: (j['category'] ?? field).toString(),
-      simpleExplanation: (j['simpleExplanation'] ?? '').toString(),
-      lifeAnalogy: (j['lifeAnalogy'] ?? '').toString(),
-      practicalApplication: (j['practicalApplication'] ?? '').toString(),
-      commonMisconception: (j['commonMisconception'] ?? '').toString(),
+      category: _repairKnownEncodingDamage(
+        (j['category'] ?? field).toString(),
+      ),
+      simpleExplanation: _repairKnownEncodingDamage(
+        (j['simpleExplanation'] ?? '').toString(),
+      ),
+      lifeAnalogy: _repairKnownEncodingDamage(
+        (j['lifeAnalogy'] ?? '').toString(),
+      ),
+      practicalApplication: _repairKnownEncodingDamage(
+        (j['practicalApplication'] ?? '').toString(),
+      ),
+      commonMisconception: _repairKnownEncodingDamage(
+        (j['commonMisconception'] ?? '').toString(),
+      ),
       sourceUrl: (j['sourceUrl'] ?? '').toString(),
     );
   }
+
+  /// 修复旧版热词缓存中已经确认的 UTF-8 损坏片段，让已安装版本升级后
+  /// 即使暂时离线也不会继续显示替换符号。
+  static String _repairKnownEncodingDamage(String value) => value
+      .replaceAll('��康', '健康')
+      .replaceAll('��经', '财经')
+      .replaceAll('折扣��把', '折扣价，把')
+      .replaceAll('堆细��，', '堆细节，')
+      .replaceAll('交��一段', '交易一段');
 
   static String _dateFromId(int id) {
     final value = id.toString();
