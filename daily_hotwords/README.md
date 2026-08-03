@@ -49,7 +49,8 @@ daily_hotwords/
   "lifeAnalogy": "像一个读过很多书的学生，能根据学过的内容回答新问题。",
   "practicalApplication": "可以用于智能客服、资料整理、写作辅助和程序开发。",
   "commonMisconception": "大模型生成的内容不一定正确，不能把流畅回答当成事实。",
-  "definition": "基于海量数据训练、能完成语言理解与生成等任务的超大参数神经网络模型。"
+  "definition": "基于海量数据训练、能完成语言理解与生成等任务的超大参数神经网络模型。",
+  "sourceUrl": "https://example.com/source-link"
 }
 ```
 
@@ -61,6 +62,7 @@ daily_hotwords/
 - `publishedDate`：发布日期，格式为 `YYYY-MM-DD`，用于 App 按时间分类。
 - `category`：取 `科技 / 财经 / 社会 / 科学 / 文化 / 教育 / 健康 / 心理 / 生活 / 其他`，用于 App 按类型分类。
 - `definition`：使用完整中文句子，不写链接，不包含 Markdown。
+- `sourceUrl`：**必须附带词汇出处/原文链接**（菜鸟教程词包风格），指向热点事件的原始报道或权威来源，不得为空。
 - `simpleExplanation`：一句小学生也能听懂的概括。
 - `lifeAnalogy`：一个具体、容易联想的生活类比。
 - `practicalApplication`：说明日常生活或工作中的实际用途。
