@@ -29,6 +29,11 @@ Future<void> main(List<String> arguments) async {
 }
 
 Future<void> _serve(HttpRequest request, Directory root) async {
+  if (request.uri.path == '/api/hotwords') {
+    await _proxyHotwords(request);
+    return;
+  }
+
   var path = Uri.decodeComponent(request.uri.path);
   if (path == '/' || path.isEmpty) path = '/index.html';
   if (path.split('/').contains('..')) {
@@ -51,6 +56,49 @@ Future<void> _serve(HttpRequest request, Directory root) async {
     ..set('Expires', '0');
   await request.response.addStream(file.openRead());
   await request.response.close();
+}
+
+Future<void> _proxyHotwords(HttpRequest request) async {
+  const allowedHosts = {
+    'gitee.com',
+    'www.gitee.com',
+    'api.github.com',
+    'raw.githubusercontent.com',
+    'cdn.jsdelivr.net',
+  };
+  final value = request.uri.queryParameters['url'] ?? '';
+  final remote = Uri.tryParse(value);
+  if (remote == null ||
+      remote.scheme != 'https' ||
+      !allowedHosts.contains(remote.host.toLowerCase())) {
+    request.response.statusCode = HttpStatus.badRequest;
+    request.response.write('Unsupported hotword source.');
+    await request.response.close();
+    return;
+  }
+
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
+  try {
+    final upstreamRequest = await client.getUrl(remote);
+    upstreamRequest.headers
+      ..set(HttpHeaders.acceptHeader,
+          'application/vnd.github.raw+json, application/json')
+      ..set(HttpHeaders.userAgentHeader, 'qiuzhi-web/0.3.8');
+    final upstream = await upstreamRequest.close();
+    request.response.statusCode = upstream.statusCode;
+    request.response.headers
+      ..contentType = ContentType.json
+      ..set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      ..set('Pragma', 'no-cache')
+      ..set('Expires', '0');
+    await request.response.addStream(upstream);
+  } on Object catch (error) {
+    request.response.statusCode = HttpStatus.badGateway;
+    request.response.write('Hotword proxy failed: $error');
+  } finally {
+    client.close(force: true);
+    await request.response.close();
+  }
 }
 
 ContentType _contentType(String path) {

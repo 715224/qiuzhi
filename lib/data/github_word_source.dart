@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/word.dart';
 
@@ -20,9 +21,10 @@ class GithubWordSource {
 
     for (final uri in candidates) {
       try {
+        final requestUri = _requestUri(uri);
         final response = await (client == null
-                ? http.get(uri, headers: _headersFor(uri))
-                : client.get(uri, headers: _headersFor(uri)))
+                ? http.get(requestUri, headers: _headersFor(requestUri))
+                : client.get(requestUri, headers: _headersFor(requestUri)))
             .timeout(_timeout);
         if (response.statusCode == 404) {
           lastError = '文件不存在：$uri';
@@ -33,7 +35,7 @@ class GithubWordSource {
           continue;
         }
 
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final data = jsonDecode(_decodeBody(response));
         if (data is! List) {
           lastError = '词库格式应为 JSON 数组';
           continue;
@@ -102,6 +104,9 @@ class GithubWordSource {
         );
       }
       return [uri];
+    }
+    if (host == 'gitee.com' || host == 'www.gitee.com') {
+      return _giteeCandidates(uri);
     }
     if (host != 'github.com' && host != 'www.github.com') return [uri];
 
@@ -179,15 +184,87 @@ class GithubWordSource {
     ];
   }
 
+  static List<Uri> _giteeCandidates(Uri uri) {
+    final parts = uri.pathSegments.where((part) => part.isNotEmpty).toList();
+    if (parts.length < 2) {
+      throw const FormatException('Gitee 地址需要包含用户名和仓库名');
+    }
+    final owner = parts[0];
+    final repository = parts[1].replaceFirst(RegExp(r'\.git$'), '');
+
+    // Gitee 文件页与 Raw 页。
+    if (parts.length >= 5 && (parts[2] == 'blob' || parts[2] == 'raw')) {
+      return [
+        _giteeRawUri(
+          owner,
+          repository,
+          parts[3],
+          parts.sublist(4).join('/'),
+        ),
+      ];
+    }
+
+    const files = [
+      ('master', 'daily_hotwords/library.json'),
+      ('main', 'daily_hotwords/library.json'),
+      ('master', 'daily_hotwords/words.json'),
+      ('main', 'daily_hotwords/words.json'),
+      ('master', 'words.json'),
+      ('main', 'words.json'),
+      ('master', 'words.example.json'),
+      ('main', 'words.example.json'),
+    ];
+    return [
+      for (final file in files)
+        _giteeRawUri(owner, repository, file.$1, file.$2),
+    ];
+  }
+
+  /// 本地网页版使用同源代理，避免浏览器 CORS 阻止 GitHub/Gitee 请求。
+  /// 部署到普通 HTTPS 网站时保持直连，兼容现有静态托管方式。
+  static Uri _requestUri(Uri remote) {
+    if (!kIsWeb) return remote;
+    final localHost = Uri.base.host == '127.0.0.1' ||
+        Uri.base.host.toLowerCase() == 'localhost';
+    const proxyHosts = {
+      'gitee.com',
+      'www.gitee.com',
+      'api.github.com',
+      'raw.githubusercontent.com',
+      'cdn.jsdelivr.net',
+    };
+    if (!localHost || !proxyHosts.contains(remote.host.toLowerCase())) {
+      return remote;
+    }
+    return Uri.base.resolve('/api/hotwords').replace(
+      queryParameters: {'url': remote.toString()},
+    );
+  }
+
   static Map<String, String> _headersFor(Uri uri) {
+    final isWeb = kIsWeb;
     if (uri.host.toLowerCase() == 'api.github.com') {
-      return const {
+      return {
         'Accept': 'application/vnd.github.raw+json',
-        'User-Agent': 'qiuzhi-app',
+        // 浏览器禁止设置 User-Agent，跳过避免触发不必要的预检请求。
+        if (!isWeb) 'User-Agent': 'qiuzhi-app',
         'Cache-Control': 'no-cache',
       };
     }
+    // Web 端不带自定义 header，确保请求是"简单请求"，
+    // 浏览器不会发送 CORS 预检，jsDelivr 等可直接访问。
+    if (isWeb) return const {};
     return const {'Cache-Control': 'no-cache'};
+  }
+
+  /// 解码 HTTP 响应体。
+  ///
+  /// Web 端 [response.bodyBytes] 是浏览器解码后又重新编码的 UTF-16 code units，
+  /// 直接 utf8.decode 会产生乱码；改用 [response.body]（浏览器已正确解码的字符串）。
+  /// 非 Web 端 [response.bodyBytes] 是原始字节，用 utf8.decode 正确。
+  static String _decodeBody(http.Response response) {
+    if (kIsWeb) return response.body;
+    return utf8.decode(response.bodyBytes);
   }
 
   static Uri _jsDelivrUri(
@@ -224,6 +301,18 @@ class GithubWordSource {
     return Uri.https(
       'raw.githubusercontent.com',
       '/$owner/$repository/$branch/$path',
+    );
+  }
+
+  static Uri _giteeRawUri(
+    String owner,
+    String repository,
+    String branch,
+    String path,
+  ) {
+    return Uri.https(
+      'gitee.com',
+      '/$owner/$repository/raw/$branch/$path',
     );
   }
 }

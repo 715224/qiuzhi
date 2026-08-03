@@ -56,6 +56,34 @@ void main() {
       expect(urls.first.host, 'api.github.com');
       expect(urls.last.toString(), raw);
     });
+
+    test('expands a Gitee repository home page', () {
+      final urls = GithubWordSource.candidateUris(
+        'https://gitee.com/ccy1028/the-pursuit-of-knowledge',
+      ).map((uri) => uri.toString()).toList();
+
+      expect(
+        urls.first,
+        'https://gitee.com/ccy1028/the-pursuit-of-knowledge/raw/master/daily_hotwords/library.json',
+      );
+      expect(
+        urls,
+        contains(
+          'https://gitee.com/ccy1028/the-pursuit-of-knowledge/raw/main/daily_hotwords/words.json',
+        ),
+      );
+    });
+
+    test('converts a Gitee file page to its raw URL', () {
+      final urls = GithubWordSource.candidateUris(
+        'https://gitee.com/ccy1028/the-pursuit-of-knowledge/blob/master/daily_hotwords/library.json',
+      );
+
+      expect(
+        urls.single.toString(),
+        'https://gitee.com/ccy1028/the-pursuit-of-knowledge/raw/master/daily_hotwords/library.json',
+      );
+    });
   });
 
   test('falls back from missing files to the CDN example file', () async {
