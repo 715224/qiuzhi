@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -197,7 +198,9 @@ class AiBookService {
         '模型接口返回 HTTP ${response.statusCode}，请检查接口地址、模型名与 API Key。',
       );
     }
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final decoded = jsonDecode(
+      kIsWeb ? response.body : utf8.decode(response.bodyBytes),
+    );
     if (decoded is! Map) {
       throw const FormatException('模型响应格式异常。');
     }

@@ -64,7 +64,9 @@ class _TodayScreenState extends State<TodayScreen>
 
     // 启动晃动动画 + 滚动音效
     _shakeController.repeat();
-    SoundService.instance.playDrawRoll();
+    try {
+      SoundService.instance.playDrawRoll();
+    } catch (_) {}
 
     setState(() {
       _drawing = true;
@@ -86,8 +88,12 @@ class _TodayScreenState extends State<TodayScreen>
     // 停止晃动动画 + 滚动音效，播放揭晓音效
     _shakeController.stop();
     _shakeController.value = 0;
-    SoundService.instance.stopDrawRoll();
-    SoundService.instance.playReveal();
+    try {
+      SoundService.instance.stopDrawRoll();
+    } catch (_) {}
+    try {
+      SoundService.instance.playReveal();
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() {

@@ -24,7 +24,16 @@ Future<void> main(List<String> arguments) async {
 
   stdout.writeln('求知网页版：http://127.0.0.1:$port');
   await for (final request in server) {
-    await _serve(request, root);
+    // 每个请求独立 try-catch，单个请求异常不会让整个服务器崩溃。
+    try {
+      await _serve(request, root);
+    } catch (error) {
+      // 客户端刷新/取消请求时会触发异常，忽略即可。
+      try {
+        request.response.statusCode = HttpStatus.internalServerError;
+        await request.response.close();
+      } catch (_) {}
+    }
   }
 }
 
@@ -44,7 +53,7 @@ Future<void> _serve(HttpRequest request, Directory root) async {
 
   final relative = path.substring(1).replaceAll('/', Platform.pathSeparator);
   var file = File('${root.path}${Platform.pathSeparator}$relative');
-  if (!file.existsSync()) {
+  if (!file.existsSync() || file is Directory) {
     // Flutter 使用客户端路由，未知路径交给入口页面处理。
     file = File('${root.path}${Platform.pathSeparator}index.html');
   }
@@ -112,6 +121,7 @@ ContentType _contentType(String path) {
     'jpg' || 'jpeg' => ContentType('image', 'jpeg'),
     'svg' => ContentType('image', 'svg+xml'),
     'wasm' => ContentType('application', 'wasm'),
+    'wav' => ContentType('audio', 'wav'),
     'woff' => ContentType('font', 'woff'),
     'woff2' => ContentType('font', 'woff2'),
     _ => ContentType.binary,

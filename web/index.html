@@ -50,6 +50,16 @@
     @keyframes qiuzhi-pulse { 50% { transform: translateY(-6px); } }
   </style>
   <div id="qiuzhi-loading" class="qiuzhi-loading">求知<br><small>正在整理今天的词汇…</small></div>
+
+  <!-- 注销旧的 Service Worker，避免缓存旧构建导致刷新后白屏 -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(regs) {
+        regs.forEach(function(reg) { reg.unregister(); });
+      });
+    }
+  </script>
+
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
