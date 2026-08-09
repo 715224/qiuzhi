@@ -42,7 +42,9 @@
    - `updatedAt`
    - `sourceFile`
    - `wordCount`
-9. 运行 `dart tool/validate_hotwords.dart`，确认 JSON 为 UTF-8、可解析、不含 U+FFFD 替换符、ID 无重复、字段值合法，`sourceUrl` 不为空。
+9. **校验（推送前必做，防乱码）**：确认 JSON 为 UTF-8、**无 BOM**、**无 U+FFFD 替换符**（这两项即“乱码”判定标准）、可解析、ID 无重复且为 `YYYYMMDDNN` 格式、字段枚举/长度合法、`sourceUrl` 不为空且当日 10 条互不相同、definition 含 35~100 个汉字、`archive` 与 `words.json` 内容一致。
+   - 用 Python 脚本逐字段校验（托管 Python + 环境变量 `PYTHONIOENCODING=utf-8` 写文件，杜绝中文乱码）；**本项目无 dart 工具，切勿运行 `dart` 命令。**
+   - 所有 `sourceUrl` 必须真实有效、指向热点原文或权威来源（菜鸟教程词包风格“出处链接”），且同一天 10 条互不相同。
 10. 校验格式无误后，Git 提交信息固定为 `hotwords: publish YYYY-MM-DD`，并推送到远程仓库。
 
 ## 内容质量要求
