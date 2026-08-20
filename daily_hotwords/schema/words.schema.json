@@ -88,7 +88,12 @@
         "type": "string",
         "format": "uri",
         "maxLength": 500,
-        "description": "热词出处/原文链接，标注信息来源"
+        "description": "热词出处/原文链接，标注信息来源（菜鸟教程词包风格）"
+      },
+      "appear": {
+        "type": "string",
+        "maxLength": 300,
+        "description": "热词在热点中出现的具体时间（含来源），满足“标明热词出现的时间”要求"
       }
     }
   }

@@ -30,6 +30,7 @@
    - `practicalApplication`：在日常生活或工作中的实际用途
    - `commonMisconception`：大家最容易搞错的一个地方
    - `definition`：准确完整的中文定义（含热点时间背景）
+   - `appear`：**标明热词在热点中出现的具体时间**（如“2026年8月19日（……，央视报道）”），满足“标注热词出现的时间”要求
    - `sourceUrl`：**必须附带词汇出处/原文链接**（菜鸟教程词包风格）
 4. 按 `YYYYMMDDNN` 生成整数 ID，`NN` 从 `01` 开始。
 5. 输出符合 `schema/words.schema.json` 的 JSON 数组。
@@ -44,6 +45,7 @@
    - `wordCount`
 9. **校验（推送前必做，防乱码）**：确认 JSON 为 UTF-8、**无 BOM**、**无 U+FFFD 替换符**（这两项即“乱码”判定标准）、可解析、ID 无重复且为 `YYYYMMDDNN` 格式、字段枚举/长度合法、`sourceUrl` 不为空且当日 10 条互不相同、definition 含 35~100 个汉字、`archive` 与 `words.json` 内容一致。
    - 用 Python 脚本逐字段校验（托管 Python + 环境变量 `PYTHONIOENCODING=utf-8` 写文件，杜绝中文乱码）；**本项目无 dart 工具，切勿运行 `dart` 命令。**
+   - `appear`（出现时间）与 `sourceUrl`（出处链接）已写入 `schema/words.schema.json`，可用 JSON Schema 直接校验，二者当日须互不相同且非空。
    - 所有 `sourceUrl` 必须真实有效、指向热点原文或权威来源（菜鸟教程词包风格“出处链接”），且同一天 10 条互不相同。
 10. 校验格式无误后，Git 提交信息固定为 `hotwords: publish YYYY-MM-DD`，并推送到远程仓库。
 
