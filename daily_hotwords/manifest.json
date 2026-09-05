@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "timezone": "Asia/Shanghai",
-  "updatedAt": "2026-09-04T12:07:47.936469+0800",
+  "updatedAt": "2026-09-05T12:05:49.258455+0800",
   "currentFile": "words.json",
   "libraryFile": "library.json",
-  "sourceFile": "archive/2026/09/2026-09-04.json",
+  "sourceFile": "archive/2026/09/2026-09-05.json",
   "archivePattern": "archive/YYYY/MM/YYYY-MM-DD.json",
   "wordCount": 10
 }
